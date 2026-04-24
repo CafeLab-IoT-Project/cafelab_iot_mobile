@@ -1,6 +1,6 @@
 name: cafelab_iot_mobile
 description: "A new Flutter project."
-publish_to: 'none'
+publish_to: "none"
 version: 0.1.0
 
 environment:
@@ -27,7 +27,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
+
   # Assets (imágenes y recursos)
   assets:
     - assets/images/

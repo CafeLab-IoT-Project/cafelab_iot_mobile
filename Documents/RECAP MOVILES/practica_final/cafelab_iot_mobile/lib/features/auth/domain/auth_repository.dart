@@ -4,7 +4,7 @@ import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_up_request.d
 
 abstract class AuthRepository {
   Future<AuthenticatedUser> signIn(SignInRequest request);
-  Future<AuthenticatedUser> signUp(SignUpRequest request);
+  Future<void> registerProfile(SignUpRequest request);
   Future<void> saveToken(String token);
   Future<String?> getToken();
   Future<void> clearToken();

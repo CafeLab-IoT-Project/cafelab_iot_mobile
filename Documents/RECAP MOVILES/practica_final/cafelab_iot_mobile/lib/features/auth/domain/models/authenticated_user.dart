@@ -15,10 +15,10 @@ class AuthenticatedUser {
 
   factory AuthenticatedUser.fromJson(Map<String, dynamic> json) {
     return AuthenticatedUser(
-      id: json['id'] as int,
-      email: json['email'] as String,
-      role: json['role'] as String,
-      token: json['token'] as String,
+      id: (json['id'] as num).toInt(),
+      email: (json['email'] as String?) ?? '',
+      role: (json['role'] as String?) ?? 'barista',
+      token: (json['token'] as String?) ?? '',
     );
   }
 

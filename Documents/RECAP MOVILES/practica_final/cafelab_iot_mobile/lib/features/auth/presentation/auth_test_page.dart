@@ -16,7 +16,12 @@ class AuthTestPage extends StatefulWidget {
 class _AuthTestPageState extends State<AuthTestPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _roleController = TextEditingController(text: 'ROLE_USER');
+  final _roleController = TextEditingController(text: 'barista');
+  final _nameController = TextEditingController();
+  final _cafeteriaNameController = TextEditingController();
+  final _experienceController = TextEditingController(text: 'beginner');
+  final _paymentMethodController = TextEditingController(text: 'cash');
+  final _planController = TextEditingController(text: 'free');
   final _authRepository = AuthRepositoryImpl();
 
   bool _isLoading = false;
@@ -35,6 +40,11 @@ class _AuthTestPageState extends State<AuthTestPage> {
     _emailController.dispose();
     _passwordController.dispose();
     _roleController.dispose();
+    _nameController.dispose();
+    _cafeteriaNameController.dispose();
+    _experienceController.dispose();
+    _paymentMethodController.dispose();
+    _planController.dispose();
     super.dispose();
   }
 
@@ -71,21 +81,53 @@ class _AuthTestPageState extends State<AuthTestPage> {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final role = _roleController.text.trim().isEmpty
-        ? 'ROLE_USER'
-        : _roleController.text.trim();
+        ? 'barista'
+        : _roleController.text.trim().toLowerCase();
 
     if (email.isEmpty || password.isEmpty) {
       _showError('Email y password son obligatorios para Sign Up.');
+      return;
+    }
+    if (_nameController.text.trim().isEmpty ||
+        _cafeteriaNameController.text.trim().isEmpty ||
+        _experienceController.text.trim().isEmpty ||
+        _paymentMethodController.text.trim().isEmpty) {
+      _showError(
+        'Completa name, cafeteriaName, experience y paymentMethod para crear el perfil.',
+      );
+      return;
+    }
+    if (role != 'barista' && role != 'owner') {
+      _showError('Role debe ser "barista" o "owner".');
       return;
     }
 
     await _runRequest(
       label: 'SIGN_UP',
       action: () async {
-        final user = await _authRepository.signUp(
-          SignUpRequest(email: email, password: password, role: role),
+        await _authRepository.registerProfile(
+          SignUpRequest(
+            email: email,
+            password: password,
+            role: role,
+            name: _nameController.text.trim(),
+            cafeteriaName: _cafeteriaNameController.text.trim(),
+            experience: _experienceController.text.trim(),
+            paymentMethod: _paymentMethodController.text.trim(),
+            plan: _planController.text.trim().isEmpty
+                ? 'free'
+                : _planController.text.trim(),
+          ),
         );
-        _applySuccess(user, expectedCode: 201);
+        if (!mounted) return;
+        setState(() {
+          _status = 'Profile created';
+          _resultText =
+              'Perfil creado correctamente. Ahora inicia sesion con Sign In.';
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil creado. Ahora usa Sign In.')),
+        );
       },
     );
   }
@@ -100,12 +142,12 @@ class _AuthTestPageState extends State<AuthTestPage> {
     });
     try {
       await action();
-      await _refreshSavedToken();
     } on AuthApiException catch (e) {
       _showError(e.toString());
     } catch (e) {
       _showError('Error inesperado: $e');
     } finally {
+      await _refreshSavedToken();
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -181,9 +223,49 @@ class _AuthTestPageState extends State<AuthTestPage> {
               ),
               const SizedBox(height: 12),
               TextField(
+                controller: _nameController,
+                decoration: const InputDecoration(
+                  labelText: 'Profile name *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _cafeteriaNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Cafeteria name *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _experienceController,
+                decoration: const InputDecoration(
+                  labelText: 'Experience *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _paymentMethodController,
+                decoration: const InputDecoration(
+                  labelText: 'Payment method *',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _planController,
+                decoration: const InputDecoration(
+                  labelText: 'Plan',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
                 controller: _roleController,
                 decoration: const InputDecoration(
-                  labelText: 'Role (opcional)',
+                  labelText: 'Role (barista | owner)',
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -192,7 +274,7 @@ class _AuthTestPageState extends State<AuthTestPage> {
               const SizedBox(height: 8),
               ElevatedButton(
                 onPressed: _isLoading ? null : _runSignUp,
-                child: const Text('Sign Up'),
+                child: const Text('Create Profile'),
               ),
               ElevatedButton(
                 onPressed: _isLoading ? null : _runSignIn,

@@ -4,30 +4,61 @@ import 'package:cafelab_iot_mobile/features/auth/domain/auth_repository.dart';
 import 'package:cafelab_iot_mobile/features/auth/domain/models/authenticated_user.dart';
 import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_in_request.dart';
 import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_up_request.dart';
+import 'package:cafelab_iot_mobile/features/profiles/application/profile_bootstrap_orchestrator.dart';
+import 'package:cafelab_iot_mobile/features/profiles/data/profile_api_service.dart';
+import 'package:flutter/foundation.dart';
 import 'dart:io';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthApiService _apiService;
   final TokenStorageService _tokenStorage;
+  final ProfileBootstrapOrchestrator _profileOrchestrator;
 
   AuthRepositoryImpl({
     AuthApiService? apiService,
     TokenStorageService? tokenStorage,
+    ProfileBootstrapOrchestrator? profileOrchestrator,
   })  : _apiService = apiService ?? AuthApiService(),
-        _tokenStorage = tokenStorage ?? TokenStorageService();
+        _tokenStorage = tokenStorage ?? TokenStorageService(),
+        _profileOrchestrator =
+            profileOrchestrator ?? ProfileBootstrapOrchestrator();
 
   @override
   Future<AuthenticatedUser> signIn(SignInRequest request) async {
-    final user = await _apiService.signIn(request);
+    final user = await _apiService.signIn(request.email, request.password);
     await saveToken(user.token);
+    final persistedToken = await getToken();
+    if (persistedToken == null || persistedToken.isEmpty) {
+      throw const AuthApiException(
+        'No se pudo persistir el token de sesion en el dispositivo.',
+      );
+    }
+    debugPrint('[AuthRepositoryImpl] Token persisted after sign-in: true');
+    try {
+      await _profileOrchestrator.ensureProfileExistsAfterSignIn(
+        user: user,
+      );
+    } on ProfileApiException catch (e) {
+      throw AuthApiException(
+        e.displayMessage,
+        statusCode: e.statusCode,
+      );
+    }
     return user;
   }
 
   @override
-  Future<AuthenticatedUser> signUp(SignUpRequest request) async {
-    final user = await _apiService.signUp(request);
-    await saveToken(user.token);
-    return user;
+  Future<void> registerProfile(SignUpRequest request) async {
+    try {
+      await _profileOrchestrator.ensureProfileExistsBeforeSignUp(
+        signUpRequest: request,
+      );
+    } on ProfileApiException catch (e) {
+      throw AuthApiException(
+        e.displayMessage,
+        statusCode: e.statusCode,
+      );
+    }
   }
 
   @override

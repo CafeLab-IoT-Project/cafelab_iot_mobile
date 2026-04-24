@@ -3,21 +3,25 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:cafelab_iot_mobile/core/config/api_config.dart';
+import 'package:cafelab_iot_mobile/features/auth/domain/models/api_message_error.dart';
 import 'package:cafelab_iot_mobile/features/auth/domain/models/authenticated_user.dart';
-import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_in_request.dart';
-import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_up_request.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AuthApiException implements Exception {
   final String message;
   final int? statusCode;
+  final ApiMessageError? apiError;
 
-  const AuthApiException(this.message, {this.statusCode});
+  const AuthApiException(this.message, {this.statusCode, this.apiError});
 
   @override
-  String toString() =>
-      statusCode == null ? message : '$message (HTTP $statusCode)';
+  String toString() {
+    final resolvedMessage = apiError?.message ?? message;
+    return statusCode == null
+        ? resolvedMessage
+        : '$resolvedMessage (HTTP $statusCode)';
+  }
 }
 
 class AuthApiService {
@@ -28,19 +32,30 @@ class AuthApiService {
   Uri _buildUri(String endpoint) =>
       Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authBasePath}$endpoint');
 
-  Future<AuthenticatedUser> signIn(SignInRequest request) async {
+  Future<AuthenticatedUser> signIn(String email, String password) async {
     return _postAuth(
       endpoint: '/sign-in',
-      body: request.toJson(),
+      body: {
+        'email': email,
+        'password': password,
+      },
       expectedStatus: HttpStatus.ok,
       actionLabel: 'sign-in',
     );
   }
 
-  Future<AuthenticatedUser> signUp(SignUpRequest request) async {
+  Future<AuthenticatedUser> signUp(
+    String email,
+    String password,
+    String role,
+  ) async {
     return _postAuth(
       endpoint: '/sign-up',
-      body: request.toJson(),
+      body: {
+        'email': email,
+        'password': password,
+        'role': role,
+      },
       expectedStatus: HttpStatus.created,
       actionLabel: 'sign-up',
     );
@@ -99,35 +114,58 @@ class AuthApiService {
       return AuthenticatedUser.fromJson(decoded);
     }
 
-    throw _mapStatusToException(response.statusCode);
+    throw _mapStatusToException(
+      statusCode: response.statusCode,
+      responseBody: response.body,
+    );
   }
 
-  AuthApiException _mapStatusToException(int statusCode) {
+  AuthApiException _mapStatusToException({
+    required int statusCode,
+    required String responseBody,
+  }) {
+    ApiMessageError? apiError;
+    if (responseBody.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(responseBody);
+        if (decoded is Map<String, dynamic>) {
+          apiError = ApiMessageError.fromJson(decoded);
+        }
+      } catch (_) {
+        // Ignore parse errors and fallback to default messages.
+      }
+    }
+
     switch (statusCode) {
       case HttpStatus.badRequest:
-        return const AuthApiException(
+        return AuthApiException(
           'Solicitud inválida (400). Revisa email, password o role.',
           statusCode: HttpStatus.badRequest,
+          apiError: apiError,
         );
       case HttpStatus.notFound:
-        return const AuthApiException(
+        return AuthApiException(
           'Credenciales inválidas o usuario no encontrado (404).',
           statusCode: HttpStatus.notFound,
+          apiError: apiError,
         );
       case HttpStatus.unauthorized:
-        return const AuthApiException(
+        return AuthApiException(
           'No autorizado (401).',
           statusCode: HttpStatus.unauthorized,
+          apiError: apiError,
         );
       case HttpStatus.internalServerError:
-        return const AuthApiException(
+        return AuthApiException(
           'Error interno del backend (500).',
           statusCode: HttpStatus.internalServerError,
+          apiError: apiError,
         );
       default:
         return AuthApiException(
           'Error de autenticación no controlado.',
           statusCode: statusCode,
+          apiError: apiError,
         );
     }
   }
