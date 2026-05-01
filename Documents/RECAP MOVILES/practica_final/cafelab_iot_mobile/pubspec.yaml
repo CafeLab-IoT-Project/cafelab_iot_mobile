@@ -31,24 +31,24 @@ flutter:
   # Assets (imágenes y recursos)
   assets:
     - assets/images/
-    - assets/images/splash/
-    - assets/images/onboarding/
+    # - assets/images/splash/
+    # - assets/images/onboarding/
     - assets/images/icons/
 
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/images/icons/utimee.png"
+  image_path: "assets/images/icons/coffee-icon.png"
   min_sdk_android: 21 # android min sdk min:16, default 21
   web:
     generate: true
-    image_path: "assets/images/icons/utimee.png"
+    image_path: "assets/images/icons/coffee-icon.png"
     background_color: "#7209B7"
     theme_color: "#7209B7"
   windows:
     generate: true
-    image_path: "assets/images/icons/utimee.png"
+    image_path: "assets/images/icons/coffee-icon.png"
     icon_size: 48 # min:48, max:256, default: 48
   macos:
     generate: true
-    image_path: "assets/images/icons/utimee.png"
+    image_path: "assets/images/icons/coffee-icon.png"

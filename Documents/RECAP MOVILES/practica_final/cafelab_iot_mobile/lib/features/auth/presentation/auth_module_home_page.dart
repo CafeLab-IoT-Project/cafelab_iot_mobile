@@ -1,5 +1,6 @@
 import 'package:cafelab_iot_mobile/features/auth/presentation/auth_test_page.dart';
 import 'package:cafelab_iot_mobile/features/defects/presentation/defects_test_page.dart';
+import 'package:cafelab_iot_mobile/features/production/presentation/production_home_page.dart';
 import 'package:flutter/material.dart';
 
 class AuthModuleHomePage extends StatelessWidget {
@@ -34,6 +35,19 @@ class AuthModuleHomePage extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const DefectsTestPage()),
+                );
+              },
+            ),
+          ),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.precision_manufacturing_outlined),
+              title: const Text('Production'),
+              subtitle: const Text('Roast Profiles + Coffee Lots'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ProductionHomePage()),
                 );
               },
             ),
