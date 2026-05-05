@@ -14,11 +14,15 @@ class ProductionApiException implements Exception {
   });
 
   String get userMessage {
-    if (statusCode == 401) return 'Sesion expirada o no autenticado';
+    if (statusCode == 401) {
+      return errorResponse?.message ?? 'Sesion expirada o no autenticado';
+    }
     if (statusCode == 403) {
       return errorResponse?.message ?? 'No tienes permisos para este recurso';
     }
-    if (statusCode == 404) return 'Recurso no encontrado';
+    if (statusCode == 404) {
+      return errorResponse?.message ?? 'Recurso no encontrado';
+    }
     if (statusCode == 400) {
       return errorResponse?.userFriendlyValidation() ??
           errorResponse?.message ??
