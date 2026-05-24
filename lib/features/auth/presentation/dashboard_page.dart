@@ -2,6 +2,7 @@ import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_col
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/dashboard_features.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/edit_profile_session_page.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/utils/dashboard_feature_navigation.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/authenticated_scaffold.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/dashboard_feature_card.dart';
 import 'package:flutter/material.dart';
@@ -89,8 +90,11 @@ class _DashboardPageState extends State<DashboardPage> {
                   ),
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
+                      final feature = features[index];
                       return DashboardFeatureCard(
-                        feature: features[index],
+                        feature: feature,
+                        onTap: () =>
+                            DashboardFeatureNavigation.open(context, feature.id),
                       );
                     },
                     childCount: features.length,
