@@ -3,6 +3,12 @@ class ProfileModel {
   final String name;
   final String email;
   final String role;
+  final String cafeteriaName;
+  final String experience;
+  final String paymentMethod;
+  final bool isFirstLogin;
+  final String plan;
+  final bool hasPlan;
   final Map<String, dynamic> raw;
 
   const ProfileModel({
@@ -10,6 +16,12 @@ class ProfileModel {
     required this.name,
     required this.email,
     required this.role,
+    this.cafeteriaName = '',
+    this.experience = '',
+    this.paymentMethod = '',
+    this.isFirstLogin = true,
+    this.plan = '',
+    this.hasPlan = false,
     required this.raw,
   });
 
@@ -19,6 +31,12 @@ class ProfileModel {
       name: (json['name'] as String?) ?? '',
       email: (json['email'] as String?) ?? '',
       role: (json['role'] as String?) ?? '',
+      cafeteriaName: (json['cafeteriaName'] as String?) ?? '',
+      experience: (json['experience'] as String?) ?? '',
+      paymentMethod: (json['paymentMethod'] as String?) ?? '',
+      isFirstLogin: json['isFirstLogin'] as bool? ?? true,
+      plan: (json['plan'] as String?) ?? '',
+      hasPlan: json['hasPlan'] as bool? ?? false,
       raw: json,
     );
   }
