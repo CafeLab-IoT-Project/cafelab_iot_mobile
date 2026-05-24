@@ -1,26 +1,32 @@
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/dashboard_assets.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/models/dashboard_feature_id.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/dashboard_feature_item.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 
 abstract final class DashboardFeatures {
   static const barista = [
     DashboardFeatureItem(
+      id: DashboardFeatureId.cuppingSessions,
       title: 'Sesiones de cata',
       imageAsset: DashboardAssets.catas,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.defectLibrary,
       title: 'Librería de defectos',
       imageAsset: DashboardAssets.defects,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.grindCalibration,
       title: 'Calibración de molienda',
       imageAsset: DashboardAssets.calibracion,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.recipes,
       title: 'Recetas',
       imageAsset: DashboardAssets.recetas,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.monitoring,
       title: 'Monitoreo',
       imageAsset: DashboardAssets.monitoreo,
     ),
@@ -28,26 +34,32 @@ abstract final class DashboardFeatures {
 
   static const owner = [
     DashboardFeatureItem(
+      id: DashboardFeatureId.suppliers,
       title: 'Proveedores',
       imageAsset: DashboardAssets.suppliers,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.coffeeLots,
       title: 'Lotes de café',
       imageAsset: DashboardAssets.lots,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.roastProfiles,
       title: 'Perfiles de tueste',
       imageAsset: DashboardAssets.roastProfiles,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.inventory,
       title: 'Inventario',
       imageAsset: DashboardAssets.inventario,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.productionCost,
       title: 'Gestión de costos',
       imageAsset: DashboardAssets.costos,
     ),
     DashboardFeatureItem(
+      id: DashboardFeatureId.monitoring,
       title: 'Monitoreo',
       imageAsset: DashboardAssets.monitoreo,
     ),
