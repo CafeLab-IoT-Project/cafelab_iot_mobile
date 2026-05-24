@@ -35,6 +35,7 @@ flutter:
     # - assets/images/onboarding/
     - assets/images/icons/
     - assets/images/background/
+    - assets/images/dashboard/
 
 flutter_launcher_icons:
   android: true

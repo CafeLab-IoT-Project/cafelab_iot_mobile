@@ -1,32 +1,49 @@
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_assets.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_colors.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/models/auth_user_role.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/models/plan_flow_mode.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/utils/payment_validators.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/utils/profile_flow_navigation.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_api_error_banner.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_header.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_primary_button.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_pill_button.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_screen_background.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/plan_summary_card.dart';
+import 'package:cafelab_iot_mobile/features/profiles/application/profile_onboarding_service.dart';
+import 'package:cafelab_iot_mobile/features/profiles/data/profile_api_service.dart';
+import 'package:cafelab_iot_mobile/features/profiles/domain/models/profile_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 enum PaymentMethod { visa, mastercard }
 
-/// Pantalla reservada para confirmar el pago del plan seleccionado.
+/// Confirmación de pago (solo validación visual; actualiza `hasPlan` en backend).
 class ConfirmPaymentPage extends StatefulWidget {
   const ConfirmPaymentPage({
     super.key,
     required this.selectedPlan,
+    required this.userRole,
+    this.flowMode = PlanFlowMode.initialOnboarding,
   });
 
   final SubscriptionPlan selectedPlan;
+  final AuthUserRole userRole;
+  final PlanFlowMode flowMode;
+
+  bool get _isChangePlan => flowMode == PlanFlowMode.changePlan;
 
   @override
   State<ConfirmPaymentPage> createState() => _ConfirmPaymentPageState();
 }
 
 class _ConfirmPaymentPageState extends State<ConfirmPaymentPage> {
+  final _onboardingService = ProfileOnboardingService();
+
   PaymentMethod? _selectedMethod;
   String _country = 'Perú';
+  ProfileModel? _profile;
 
   final _emailController = TextEditingController();
   final _cardNumberController = TextEditingController();
@@ -34,7 +51,19 @@ class _ConfirmPaymentPageState extends State<ConfirmPaymentPage> {
   final _cvcController = TextEditingController();
   final _cardholderController = TextEditingController();
 
+  bool _isLoadingProfile = true;
+  bool _isSubmitting = false;
+  bool _formSubmitted = false;
+  String _apiError = '';
+  Map<String, String> _fieldErrors = {};
+
   static const _countries = ['Perú', 'México', 'Colombia', 'Chile', 'Ecuador'];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileEmail();
+  }
 
   @override
   void dispose() {
@@ -46,8 +75,109 @@ class _ConfirmPaymentPageState extends State<ConfirmPaymentPage> {
     super.dispose();
   }
 
+  Future<void> _loadProfileEmail() async {
+    try {
+      final profile = await _onboardingService.fetchCurrentProfile();
+      if (!mounted) return;
+      _profile = profile;
+      _emailController.text = profile.email;
+    } on ProfileApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _apiError = e.displayMessage;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _apiError = 'No se pudo cargar el correo del perfil.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _confirmPayment() async {
+    setState(() {
+      _formSubmitted = true;
+      _apiError = '';
+    });
+
+    final fieldErrors = PaymentValidators.validate(
+      hasPaymentMethod: _selectedMethod != null,
+      email: _emailController.text,
+      cardNumber: _cardNumberController.text,
+      expiry: _expiryController.text,
+      cvc: _cvcController.text,
+      cardholder: _cardholderController.text,
+      country: _country,
+    );
+
+    if (fieldErrors.isNotEmpty) {
+      setState(() {
+        _fieldErrors = fieldErrors;
+      });
+      return;
+    }
+
+    final profile = _profile;
+    if (profile == null) {
+      setState(() {
+        _apiError = 'Perfil no disponible. Vuelve a seleccionar un plan.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+      _fieldErrors = {};
+    });
+
+    final paymentMethod =
+        _selectedMethod == PaymentMethod.visa ? 'visa' : 'mastercard';
+
+    try {
+      final updatedProfile = await _onboardingService.completePayment(
+        profile: profile,
+        paymentMethod: paymentMethod,
+        planOverride: widget._isChangePlan
+            ? widget.selectedPlan.apiPlanValue
+            : null,
+      );
+
+      if (!mounted) return;
+
+      ProfileFlowNavigation.navigateAfterPlanChangePayment(
+        context,
+        updatedProfile: updatedProfile,
+        selectedPlanType: widget.selectedPlan.type,
+      );
+    } on ProfileApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _apiError = e.displayMessage;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _apiError = 'Error al confirmar el pago.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isBusy = _isLoadingProfile || _isSubmitting;
+
     return Scaffold(
       body: AuthScreenBackground(
         backgroundAsset: AuthAssets.selectPlansBackground,
@@ -67,46 +197,64 @@ class _ConfirmPaymentPageState extends State<ConfirmPaymentPage> {
                         alignment: Alignment.centerLeft,
                         child: AuthPillButton(
                           label: 'Volver a planes',
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: isBusy
+                              ? null
+                              : () => Navigator.of(context).pop(),
                         ),
                       ),
                       const SizedBox(height: 12),
                       Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              PlanSummaryCard(plan: widget.selectedPlan),
-                              const SizedBox(height: 16),
-                              _PaymentFormCard(
-                                selectedMethod: _selectedMethod,
-                                onMethodChanged: (method) {
-                                  setState(() {
-                                    _selectedMethod = method;
-                                  });
-                                },
-                                emailController: _emailController,
-                                cardNumberController: _cardNumberController,
-                                expiryController: _expiryController,
-                                cvcController: _cvcController,
-                                cardholderController: _cardholderController,
-                                country: _country,
-                                countries: _countries,
-                                onCountryChanged: (value) {
-                                  if (value == null) return;
-                                  setState(() {
-                                    _country = value;
-                                  });
-                                },
+                        child: _isLoadingProfile
+                            ? const Center(child: CircularProgressIndicator())
+                            : SingleChildScrollView(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    if (_apiError.isNotEmpty) ...[
+                                      AuthApiErrorBanner(message: _apiError),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    PlanSummaryCard(plan: widget.selectedPlan),
+                                    const SizedBox(height: 16),
+                                    _PaymentFormCard(
+                                      selectedMethod: _selectedMethod,
+                                      onMethodChanged: (method) {
+                                        setState(() {
+                                          _selectedMethod = method;
+                                          _fieldErrors = Map<String, String>.from(
+                                            _fieldErrors,
+                                          )..remove('paymentMethod');
+                                        });
+                                      },
+                                      emailController: _emailController,
+                                      cardNumberController: _cardNumberController,
+                                      expiryController: _expiryController,
+                                      cvcController: _cvcController,
+                                      cardholderController: _cardholderController,
+                                      country: _country,
+                                      countries: _countries,
+                                      onCountryChanged: (value) {
+                                        if (value == null) return;
+                                        setState(() {
+                                          _country = value;
+                                          _fieldErrors = Map<String, String>.from(
+                                            _fieldErrors,
+                                          )..remove('country');
+                                        });
+                                      },
+                                      fieldErrors: _fieldErrors,
+                                      formSubmitted: _formSubmitted,
+                                      enabled: !isBusy,
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        ),
                       ),
                       const SizedBox(height: 12),
                       AuthPrimaryButton(
                         label: 'Confirmar pago',
-                        onPressed: () {},
+                        isLoading: _isSubmitting,
+                        onPressed: isBusy ? null : _confirmPayment,
                       ),
                     ],
                   ),
@@ -132,6 +280,9 @@ class _PaymentFormCard extends StatelessWidget {
     required this.country,
     required this.countries,
     required this.onCountryChanged,
+    required this.fieldErrors,
+    required this.formSubmitted,
+    required this.enabled,
   });
 
   final PaymentMethod? selectedMethod;
@@ -144,6 +295,9 @@ class _PaymentFormCard extends StatelessWidget {
   final String country;
   final List<String> countries;
   final ValueChanged<String?> onCountryChanged;
+  final Map<String, String> fieldErrors;
+  final bool formSubmitted;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -169,23 +323,31 @@ class _PaymentFormCard extends StatelessWidget {
                 label: 'VISA',
                 labelColor: const Color(0xFF1A1F71),
                 isSelected: selectedMethod == PaymentMethod.visa,
-                onTap: () => onMethodChanged(PaymentMethod.visa),
+                onTap: enabled ? () => onMethodChanged(PaymentMethod.visa) : null,
               ),
               const SizedBox(width: 24),
               _PaymentMethodOption(
                 label: 'Mastercard',
                 labelColor: const Color(0xFFEB001B),
                 isSelected: selectedMethod == PaymentMethod.mastercard,
-                onTap: () => onMethodChanged(PaymentMethod.mastercard),
+                onTap: enabled
+                    ? () => onMethodChanged(PaymentMethod.mastercard)
+                    : null,
               ),
             ],
           ),
+          if (fieldErrors['paymentMethod'] != null) ...[
+            const SizedBox(height: 6),
+            _FieldErrorText(fieldErrors['paymentMethod']!),
+          ],
           const SizedBox(height: 20),
           _PaymentField(
             label: 'Email',
             controller: emailController,
             hintText: 'correo@ejemplo.com',
             keyboardType: TextInputType.emailAddress,
+            enabled: enabled,
+            errorText: fieldErrors['email'],
           ),
           const SizedBox(height: 16),
           const _PaymentFieldLabel(text: 'Información de tarjeta'),
@@ -194,6 +356,8 @@ class _PaymentFormCard extends StatelessWidget {
             controller: cardNumberController,
             hintText: '0000 0000 0000 0000',
             keyboardType: TextInputType.number,
+            enabled: enabled,
+            errorText: fieldErrors['cardNumber'],
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               LengthLimitingTextInputFormatter(16),
@@ -207,6 +371,13 @@ class _PaymentFormCard extends StatelessWidget {
                   controller: expiryController,
                   hintText: 'MM/YY',
                   keyboardType: TextInputType.datetime,
+                  enabled: enabled,
+                  errorText: fieldErrors['expiry'],
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(RegExp(r'[0-9/]')),
+                    LengthLimitingTextInputFormatter(5),
+                    _ExpiryInputFormatter(),
+                  ],
                 ),
               ),
               const SizedBox(width: 10),
@@ -216,9 +387,11 @@ class _PaymentFormCard extends StatelessWidget {
                   hintText: 'CVC',
                   keyboardType: TextInputType.number,
                   obscureText: true,
+                  enabled: enabled,
+                  errorText: fieldErrors['cvc'],
                   inputFormatters: [
                     FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(4),
+                    LengthLimitingTextInputFormatter(3),
                   ],
                 ),
               ),
@@ -229,6 +402,8 @@ class _PaymentFormCard extends StatelessWidget {
             label: 'Nombre del titular',
             controller: cardholderController,
             hintText: 'Nombre completo',
+            enabled: enabled,
+            errorText: fieldErrors['cardholder'],
           ),
           const SizedBox(height: 16),
           const _PaymentFieldLabel(text: 'País'),
@@ -236,10 +411,31 @@ class _PaymentFormCard extends StatelessWidget {
           _PaymentDropdown(
             value: country,
             items: countries,
-            onChanged: onCountryChanged,
+            onChanged: enabled ? onCountryChanged : null,
+            errorText: fieldErrors['country'],
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ExpiryInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final buffer = StringBuffer();
+    for (var i = 0; i < digits.length && i < 4; i++) {
+      if (i == 2) buffer.write('/');
+      buffer.write(digits[i]);
+    }
+    final formatted = buffer.toString();
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }
@@ -255,7 +451,7 @@ class _PaymentMethodOption extends StatelessWidget {
   final String label;
   final Color labelColor;
   final bool isSelected;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +491,26 @@ class _PaymentFieldLabel extends StatelessWidget {
     return Text(
       text,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: Colors.black,
+            fontWeight: FontWeight.w700,
+            color: Colors.black,
+          ),
+    );
+  }
+}
+
+class _FieldErrorText extends StatelessWidget {
+  const _FieldErrorText(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: TextStyle(
+        color: Colors.red.shade700,
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -310,6 +524,8 @@ class _PaymentField extends StatelessWidget {
     this.keyboardType,
     this.obscureText = false,
     this.inputFormatters,
+    this.enabled = true,
+    this.errorText,
   });
 
   final String? label;
@@ -318,9 +534,13 @@ class _PaymentField extends StatelessWidget {
   final TextInputType? keyboardType;
   final bool obscureText;
   final List<TextInputFormatter>? inputFormatters;
+  final bool enabled;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
+    final hasError = errorText != null && errorText!.isNotEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,8 +553,13 @@ class _PaymentField extends StatelessWidget {
           keyboardType: keyboardType,
           obscureText: obscureText,
           inputFormatters: inputFormatters,
-          decoration: _paymentInputDecoration(hintText),
+          enabled: enabled,
+          decoration: _paymentInputDecoration(hintText, hasError),
         ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          _FieldErrorText(errorText!),
+        ],
       ],
     );
   }
@@ -345,33 +570,46 @@ class _PaymentDropdown extends StatelessWidget {
     required this.value,
     required this.items,
     required this.onChanged,
+    this.errorText,
   });
 
   final String value;
   final List<String> items;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String?>? onChanged;
+  final String? errorText;
 
   @override
   Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      items: items
-          .map(
-            (item) => DropdownMenuItem<String>(
-              value: item,
-              child: Text(item),
-            ),
-          )
-          .toList(),
-      onChanged: onChanged,
-      decoration: _paymentInputDecoration(value),
-      icon: const Icon(Icons.keyboard_arrow_down),
-      style: const TextStyle(color: Colors.black87, fontSize: 15),
+    final hasError = errorText != null && errorText!.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        DropdownButtonFormField<String>(
+          initialValue: value,
+          items: items
+              .map(
+                (item) => DropdownMenuItem<String>(
+                  value: item,
+                  child: Text(item),
+                ),
+              )
+              .toList(),
+          onChanged: onChanged,
+          decoration: _paymentInputDecoration(value, hasError),
+          icon: const Icon(Icons.keyboard_arrow_down),
+          style: const TextStyle(color: Colors.black87, fontSize: 15),
+        ),
+        if (hasError) ...[
+          const SizedBox(height: 6),
+          _FieldErrorText(errorText!),
+        ],
+      ],
     );
   }
 }
 
-InputDecoration _paymentInputDecoration(String hintText) {
+InputDecoration _paymentInputDecoration(String hintText, bool hasError) {
   return InputDecoration(
     hintText: hintText,
     hintStyle: TextStyle(
@@ -383,15 +621,22 @@ InputDecoration _paymentInputDecoration(String hintText) {
     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     border: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey.shade400),
+      borderSide: BorderSide(
+        color: hasError ? Colors.red.shade300 : Colors.grey.shade400,
+      ),
     ),
     enabledBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: BorderSide(color: Colors.grey.shade400),
+      borderSide: BorderSide(
+        color: hasError ? Colors.red.shade300 : Colors.grey.shade400,
+      ),
     ),
     focusedBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: AuthColors.primary, width: 1.5),
+      borderSide: BorderSide(
+        color: hasError ? Colors.red.shade400 : AuthColors.primary,
+        width: 1.5,
+      ),
     ),
   );
 }

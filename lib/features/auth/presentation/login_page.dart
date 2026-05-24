@@ -1,6 +1,12 @@
+import 'dart:io';
+
+import 'package:cafelab_iot_mobile/features/auth/data/auth_api_service.dart';
+import 'package:cafelab_iot_mobile/features/auth/data/auth_repository_impl.dart';
+import 'package:cafelab_iot_mobile/features/auth/domain/models/sign_in_request.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/barista_sign_up_page.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/utils/profile_flow_navigation.dart';
+import 'package:cafelab_iot_mobile/features/profiles/application/profile_onboarding_service.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/owner_sign_up_page.dart';
-import 'package:cafelab_iot_mobile/features/auth/presentation/sign_in_loading_page.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_assets.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_colors.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_form_card.dart';
@@ -21,7 +27,12 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _authRepository = AuthRepositoryImpl();
+  final _onboardingService = ProfileOnboardingService();
+
   bool _obscurePassword = true;
+  bool _isLoading = false;
+  String _apiLoginError = '';
 
   @override
   void dispose() {
@@ -46,12 +57,64 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
-  void _openSignInLoading() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const SignInLoadingPage(),
-      ),
-    );
+  Future<void> _submitLogin() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _apiLoginError = 'Completa correo y contraseña.';
+      });
+      return;
+    }
+
+    if (!email.contains('@')) {
+      setState(() {
+        _apiLoginError = 'Ingresa un correo electrónico válido.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _apiLoginError = '';
+    });
+
+    try {
+      await _authRepository.signIn(
+        SignInRequest(email: email, password: password),
+      );
+      final profile = await _onboardingService.fetchCurrentProfile();
+      if (!mounted) return;
+      ProfileFlowNavigation.goAfterAuthentication(context, profile);
+    } on AuthApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _apiLoginError = _mapLoginError(e);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _apiLoginError = 'Error inesperado al iniciar sesión.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _mapLoginError(AuthApiException error) {
+    final statusCode = error.statusCode;
+    if (statusCode == HttpStatus.notFound ||
+        statusCode == HttpStatus.unauthorized ||
+        statusCode == HttpStatus.internalServerError) {
+      return 'Correo o contraseña incorrectos.';
+    }
+
+    return error.apiError?.message ?? error.message;
   }
 
   @override
@@ -75,11 +138,35 @@ class _LoginPageState extends State<LoginPage> {
                     child: AuthFormCard(
                       title: 'Iniciar Sesion',
                       children: [
+                        if (_apiLoginError.isNotEmpty) ...[
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 10,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Text(
+                              _apiLoginError,
+                              style: TextStyle(
+                                color: Colors.red.shade800,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
                         AuthFormField(
                           controller: _emailController,
                           hintText: 'Correo electrónico*',
                           keyboardType: TextInputType.emailAddress,
                           textInputAction: TextInputAction.next,
+                          enabled: !_isLoading,
                         ),
                         const SizedBox(height: 12),
                         AuthFormField(
@@ -87,13 +174,16 @@ class _LoginPageState extends State<LoginPage> {
                           hintText: 'Contraseña*',
                           obscureText: _obscurePassword,
                           textInputAction: TextInputAction.done,
-                          onSubmitted: (_) => _openSignInLoading(),
+                          enabled: !_isLoading,
+                          onSubmitted: (_) => _submitLogin(),
                           suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                            onPressed: _isLoading
+                                ? null
+                                : () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
                             icon: Icon(
                               _obscurePassword
                                   ? Icons.visibility_off
@@ -105,7 +195,8 @@ class _LoginPageState extends State<LoginPage> {
                         const SizedBox(height: 20),
                         AuthPrimaryButton(
                           label: 'Ingresar',
-                          onPressed: _openSignInLoading,
+                          isLoading: _isLoading,
+                          onPressed: _submitLogin,
                         ),
                         const SizedBox(height: 16),
                         Row(
@@ -113,14 +204,14 @@ class _LoginPageState extends State<LoginPage> {
                             Expanded(
                               child: AuthSecondaryButton(
                                 label: 'Registrarse como Barista',
-                                onPressed: _openBaristaSignUp,
+                                onPressed: _isLoading ? null : _openBaristaSignUp,
                               ),
                             ),
                             const SizedBox(width: 10),
                             Expanded(
                               child: AuthSecondaryButton(
                                 label: 'Registrarse como Dueño de Cafetería',
-                                onPressed: _openOwnerSignUp,
+                                onPressed: _isLoading ? null : _openOwnerSignUp,
                               ),
                             ),
                           ],

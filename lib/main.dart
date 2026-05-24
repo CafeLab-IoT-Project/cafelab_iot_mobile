@@ -1,4 +1,4 @@
-import 'package:cafelab_iot_mobile/features/auth/presentation/login_page.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/app_root_page.dart';
 import 'package:flutter/material.dart';
 
 void main() {
@@ -16,7 +16,7 @@ class MainApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const LoginPage(),
+      home: const AppRootPage(),
       debugShowCheckedModeBanner: false,
     );
   }

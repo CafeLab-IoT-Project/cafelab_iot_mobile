@@ -11,7 +11,7 @@ class AuthSelectionButton extends StatelessWidget {
 
   final String label;
   final bool isSelected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {

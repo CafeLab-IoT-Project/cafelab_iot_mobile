@@ -24,4 +24,10 @@ class SubscriptionPlan {
       SubscriptionPlanType.owner => role == AuthUserRole.owner,
     };
   }
+
+  String get apiPlanValue => switch (type) {
+        SubscriptionPlanType.barista => 'barista',
+        SubscriptionPlanType.owner => 'owner',
+        SubscriptionPlanType.full => 'full',
+      };
 }
