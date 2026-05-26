@@ -9,7 +9,7 @@ import 'package:cafelab_iot_mobile/features/production/coffee_lots/domain/models
 
 class CoffeeLotsRepositoryImpl implements CoffeeLotsRepository {
   CoffeeLotsRepositoryImpl({CoffeeLotsApiService? apiService})
-      : _apiService = apiService ?? CoffeeLotsApiService();
+    : _apiService = apiService ?? CoffeeLotsApiService();
 
   final CoffeeLotsApiService _apiService;
 
@@ -26,24 +26,6 @@ class CoffeeLotsRepositoryImpl implements CoffeeLotsRepository {
   @override
   Future<List<CoffeeLot>> getAll() async {
     final list = await _apiService.getAll();
-    return list.map(CoffeeLotMapper.toDomain).toList();
-  }
-
-  @override
-  Future<CoffeeLot> getById(int coffeeLotId) async {
-    final dto = await _apiService.getById(coffeeLotId);
-    return CoffeeLotMapper.toDomain(dto);
-  }
-
-  @override
-  Future<List<CoffeeLot>> getBySupplierId(int supplierId) async {
-    final list = await _apiService.getBySupplierId(supplierId);
-    return list.map(CoffeeLotMapper.toDomain).toList();
-  }
-
-  @override
-  Future<List<CoffeeLot>> getByUserId(int userId) async {
-    final list = await _apiService.getByUserId(userId);
     return list.map(CoffeeLotMapper.toDomain).toList();
   }
 

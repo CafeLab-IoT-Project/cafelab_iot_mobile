@@ -14,13 +14,14 @@ import 'package:http/http.dart' as http;
 
 class CoffeeLotsApiService {
   CoffeeLotsApiService({http.Client? client, TokenStorageService? tokenStorage})
-      : _client = client ?? http.Client(),
-        _tokenStorage = tokenStorage ?? TokenStorageService();
+    : _client = client ?? http.Client(),
+      _tokenStorage = tokenStorage ?? TokenStorageService();
 
   final http.Client _client;
   final TokenStorageService _tokenStorage;
 
-  Uri get _baseUri => Uri.parse('${ApiConfig.baseUrl}/api/v1/coffee-lots');
+  Uri get _baseUri =>
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.coffeeLotsBasePath}');
 
   Future<Map<String, String>> _authHeaders() async {
     final token = await _tokenStorage.getToken();
@@ -56,38 +57,10 @@ class CoffeeLotsApiService {
     throw _mapError(response.statusCode, response.body);
   }
 
-  Future<List<CoffeeLotResponseDto>> getByUserId(int userId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/profile/$userId'),
-    );
-    if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<List<CoffeeLotResponseDto>> getBySupplierId(int supplierId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/supplier/$supplierId'),
-    );
-    if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<CoffeeLotResponseDto> getById(int coffeeLotId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/$coffeeLotId'),
-    );
-    if (response.statusCode == HttpStatus.ok) {
-      return CoffeeLotResponseDto.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>,
-      );
-    }
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<CoffeeLotResponseDto> update(int id, UpdateCoffeeLotRequestDto dto) async {
+  Future<CoffeeLotResponseDto> update(
+    int id,
+    UpdateCoffeeLotRequestDto dto,
+  ) async {
     final response = await _send(
       method: 'PUT',
       uri: Uri.parse('${_baseUri.toString()}/$id'),
@@ -125,18 +98,22 @@ class CoffeeLotsApiService {
     );
     if (body != null) debugPrint('[CoffeeLotsApiService] body: $body');
     final response = switch (method) {
-      'POST' => await _client
-          .post(uri, headers: headers, body: body)
-          .timeout(const Duration(seconds: 20)),
-      'GET' => await _client
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 20)),
-      'PUT' => await _client
-          .put(uri, headers: headers, body: body)
-          .timeout(const Duration(seconds: 20)),
-      'DELETE' => await _client
-          .delete(uri, headers: headers)
-          .timeout(const Duration(seconds: 20)),
+      'POST' =>
+        await _client
+            .post(uri, headers: headers, body: body)
+            .timeout(const Duration(seconds: 20)),
+      'GET' =>
+        await _client
+            .get(uri, headers: headers)
+            .timeout(const Duration(seconds: 20)),
+      'PUT' =>
+        await _client
+            .put(uri, headers: headers, body: body)
+            .timeout(const Duration(seconds: 20)),
+      'DELETE' =>
+        await _client
+            .delete(uri, headers: headers)
+            .timeout(const Duration(seconds: 20)),
       _ => throw const ProductionApiException('Metodo no soportado'),
     };
     debugPrint('[CoffeeLotsApiService] status: ${response.statusCode}');

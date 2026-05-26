@@ -29,8 +29,8 @@ class ProductionHomePage extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.coffee_outlined),
-              title: const Text('Coffee Lots'),
-              subtitle: const Text('CRUD + filtros por supplier/user'),
+              title: const Text('Lotes de cafe'),
+              subtitle: const Text('Listado, detalle y mantenimiento'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(
