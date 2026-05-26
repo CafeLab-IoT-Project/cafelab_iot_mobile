@@ -15,13 +15,14 @@ import 'package:http/http.dart' as http;
 
 class SuppliersApiService {
   SuppliersApiService({http.Client? client, TokenStorageService? tokenStorage})
-      : _client = client ?? http.Client(),
-        _tokenStorage = tokenStorage ?? TokenStorageService();
+    : _client = client ?? http.Client(),
+      _tokenStorage = tokenStorage ?? TokenStorageService();
 
   final http.Client _client;
   final TokenStorageService _tokenStorage;
 
-  Uri get _baseUri => Uri.parse('${ApiConfig.baseUrl}/api/v1/suppliers');
+  Uri get _baseUri =>
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.supplierBasePath}');
 
   Future<Map<String, String>> _headers() async {
     final token = await _tokenStorage.getToken();
@@ -37,14 +38,18 @@ class SuppliersApiService {
     };
   }
 
-  Future<SupplierResponseDto> createSupplier(CreateSupplierRequestDto dto) async {
+  Future<SupplierResponseDto> createSupplier(
+    CreateSupplierRequestDto dto,
+  ) async {
     final response = await _send(
       method: 'POST',
       uri: _baseUri,
       body: jsonEncode(dto.toJson()),
     );
     if (response.statusCode == HttpStatus.created) {
-      return SupplierResponseDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      return SupplierResponseDto.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
     }
     throw _mapError(response.statusCode, response.body);
   }
@@ -52,26 +57,6 @@ class SuppliersApiService {
   Future<List<SupplierResponseDto>> getSuppliers() async {
     final response = await _send(method: 'GET', uri: _baseUri);
     if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<List<SupplierResponseDto>> getSuppliersByUserId(int userId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/profile/$userId'),
-    );
-    if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<SupplierResponseDto> getSupplierById(int supplierId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/$supplierId'),
-    );
-    if (response.statusCode == HttpStatus.ok) {
-      return SupplierResponseDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
-    }
     throw _mapError(response.statusCode, response.body);
   }
 
@@ -85,7 +70,9 @@ class SuppliersApiService {
       body: jsonEncode(dto.toJson()),
     );
     if (response.statusCode == HttpStatus.ok) {
-      return SupplierResponseDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      return SupplierResponseDto.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
     }
     throw _mapError(response.statusCode, response.body);
   }
@@ -96,7 +83,9 @@ class SuppliersApiService {
       uri: Uri.parse('${_baseUri.toString()}/$supplierId'),
     );
     if (response.statusCode == HttpStatus.ok) {
-      return MessageResponseDto.fromJson(jsonDecode(response.body) as Map<String, dynamic>);
+      return MessageResponseDto.fromJson(
+        jsonDecode(response.body) as Map<String, dynamic>,
+      );
     }
     throw _mapError(response.statusCode, response.body);
   }
@@ -114,18 +103,22 @@ class SuppliersApiService {
     if (body != null) debugPrint('[SuppliersApiService] body: $body');
 
     final response = switch (method) {
-      'POST' => await _client
-          .post(uri, headers: headers, body: body)
-          .timeout(const Duration(seconds: 20)),
-      'GET' => await _client
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 20)),
-      'PUT' => await _client
-          .put(uri, headers: headers, body: body)
-          .timeout(const Duration(seconds: 20)),
-      'DELETE' => await _client
-          .delete(uri, headers: headers)
-          .timeout(const Duration(seconds: 20)),
+      'POST' =>
+        await _client
+            .post(uri, headers: headers, body: body)
+            .timeout(const Duration(seconds: 20)),
+      'GET' =>
+        await _client
+            .get(uri, headers: headers)
+            .timeout(const Duration(seconds: 20)),
+      'PUT' =>
+        await _client
+            .put(uri, headers: headers, body: body)
+            .timeout(const Duration(seconds: 20)),
+      'DELETE' =>
+        await _client
+            .delete(uri, headers: headers)
+            .timeout(const Duration(seconds: 20)),
       _ => throw const ProductionApiException('Metodo no soportado'),
     };
 

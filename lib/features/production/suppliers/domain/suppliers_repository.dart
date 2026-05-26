@@ -5,8 +5,6 @@ import 'package:cafelab_iot_mobile/features/production/suppliers/domain/models/u
 abstract class SuppliersRepository {
   Future<Supplier> create(CreateSupplierInput input);
   Future<List<Supplier>> getAll();
-  Future<List<Supplier>> getByUserId(int userId);
-  Future<Supplier> getById(int supplierId);
   Future<Supplier> update(int supplierId, UpdateSupplierInput input);
   Future<String> delete(int supplierId);
 }

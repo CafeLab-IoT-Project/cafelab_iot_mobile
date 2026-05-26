@@ -8,59 +8,104 @@ import 'package:flutter/foundation.dart';
 
 class SuppliersController extends ChangeNotifier {
   SuppliersController({SuppliersRepository? repository})
-      : _repository = repository ?? SuppliersRepositoryImpl();
+    : _repository = repository ?? SuppliersRepositoryImpl();
 
   final SuppliersRepository _repository;
+  final List<Supplier> _allItems = <Supplier>[];
 
   bool isLoading = false;
+  bool hasLoaded = false;
   String? errorMessage;
-  String? lastActionMessage;
-  List<Supplier> items = [];
+  String? _lastActionMessage;
+  String _searchQuery = '';
   Supplier? selected;
+
+  List<Supplier> get items {
+    if (_searchQuery.isEmpty) {
+      return List<Supplier>.unmodifiable(_allItems);
+    }
+
+    final normalizedQuery = _searchQuery.toLowerCase();
+    return List<Supplier>.unmodifiable(
+      _allItems.where((supplier) {
+        return supplier.name.toLowerCase().contains(normalizedQuery) ||
+            supplier.email.toLowerCase().contains(normalizedQuery) ||
+            supplier.location.toLowerCase().contains(normalizedQuery);
+      }),
+    );
+  }
+
+  bool get hasItems => _allItems.isNotEmpty;
 
   Future<void> loadSuppliers() async {
     await _run(() async {
-      items = await _repository.getAll();
-      lastActionMessage = 'Suppliers cargados';
+      await _refreshItems();
     });
   }
 
-  Future<void> loadSuppliersByUserId(int userId) async {
+  void updateSearchQuery(String value) {
+    _searchQuery = value.trim().toLowerCase();
+    notifyListeners();
+  }
+
+  void selectSupplier(Supplier supplier) {
+    selected = supplier;
+    notifyListeners();
+  }
+
+  String? consumeActionMessage() {
+    final message = _lastActionMessage;
+    _lastActionMessage = null;
+    return message;
+  }
+
+  Future<bool> createSupplier(CreateSupplierInput input) async {
+    var isSuccess = false;
     await _run(() async {
-      items = await _repository.getByUserId(userId);
-      lastActionMessage = 'Filtrado por userId=$userId';
+      await _repository.create(input);
+      await _refreshItems();
+      _lastActionMessage = 'Proveedor registrado correctamente.';
+      isSuccess = true;
     });
+    return isSuccess;
   }
 
-  Future<void> loadSupplierDetail(int supplierId) async {
+  Future<bool> updateSupplier(int supplierId, UpdateSupplierInput input) async {
+    var isSuccess = false;
     await _run(() async {
-      selected = await _repository.getById(supplierId);
-      lastActionMessage = 'Detalle cargado para supplierId=$supplierId';
+      await _repository.update(supplierId, input);
+      await _refreshItems();
+      _lastActionMessage = 'Proveedor actualizado correctamente.';
+      isSuccess = true;
     });
+    return isSuccess;
   }
 
-  Future<void> createSupplier(CreateSupplierInput input) async {
-    await _run(() async {
-      final created = await _repository.create(input);
-      lastActionMessage = 'Supplier creado (id=${created.id})';
-      await loadSuppliers();
-    });
-  }
-
-  Future<void> updateSupplier(int supplierId, UpdateSupplierInput input) async {
-    await _run(() async {
-      final updated = await _repository.update(supplierId, input);
-      lastActionMessage = 'Supplier actualizado (id=${updated.id})';
-      await loadSuppliers();
-    });
-  }
-
-  Future<void> deleteSupplier(int supplierId) async {
+  Future<bool> deleteSupplier(int supplierId) async {
+    var isSuccess = false;
     await _run(() async {
       final message = await _repository.delete(supplierId);
-      lastActionMessage = message;
-      await loadSuppliers();
+      await _refreshItems();
+      _lastActionMessage = message.isEmpty
+          ? 'Proveedor eliminado correctamente.'
+          : message;
+      isSuccess = true;
     });
+    return isSuccess;
+  }
+
+  Future<void> _refreshItems() async {
+    final suppliers = await _repository.getAll();
+    _allItems
+      ..clear()
+      ..addAll(suppliers);
+    hasLoaded = true;
+    if (selected != null) {
+      final selectedId = selected!.id;
+      selected = _allItems.any((supplier) => supplier.id == selectedId)
+          ? _allItems.firstWhere((supplier) => supplier.id == selectedId)
+          : null;
+    }
   }
 
   Future<void> _run(Future<void> Function() action) async {
