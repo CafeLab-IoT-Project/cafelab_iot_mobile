@@ -1,7 +1,10 @@
+import 'package:cafelab_iot_mobile/features/auth/presentation/constants/dashboard_features.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/dashboard_feature_id.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 import 'package:cafelab_iot_mobile/features/calibrations/presentation/calibrations_test_page.dart';
 import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_test_page.dart';
 import 'package:cafelab_iot_mobile/features/defects/presentation/defects_test_page.dart';
+import 'package:cafelab_iot_mobile/features/cost_management/presentation/cost_management_page.dart';
 import 'package:cafelab_iot_mobile/features/management/presentation/management_test_page.dart';
 import 'package:cafelab_iot_mobile/features/preparation/presentation/preparation_test_page.dart';
 import 'package:cafelab_iot_mobile/features/production/coffee_lots/presentation/coffee_lots_page.dart';
@@ -10,8 +13,23 @@ import 'package:cafelab_iot_mobile/features/production/suppliers/presentation/su
 import 'package:flutter/material.dart';
 
 abstract final class DashboardFeatureNavigation {
-  static void open(BuildContext context, DashboardFeatureId id) {
-    final route = _routeFor(id);
+  static void open(
+    BuildContext context,
+    DashboardFeatureId id, {
+    required SubscriptionPlanType planType,
+  }) {
+    if (!DashboardFeatures.isFeatureAvailable(id, planType)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Esta funcionalidad no está disponible en tu plan actual.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final route = _routeFor(id, planType: planType);
     if (route == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -24,7 +42,10 @@ abstract final class DashboardFeatureNavigation {
     Navigator.of(context).push(route);
   }
 
-  static Route<void>? _routeFor(DashboardFeatureId id) {
+  static Route<void>? _routeFor(
+    DashboardFeatureId id, {
+    required SubscriptionPlanType planType,
+  }) {
     return switch (id) {
       DashboardFeatureId.cuppingSessions => MaterialPageRoute<void>(
           builder: (_) => const CuppingSessionsTestPage(),
@@ -52,7 +73,7 @@ abstract final class DashboardFeatureNavigation {
           builder: (_) => const ManagementTestPage(),
         ),
       DashboardFeatureId.productionCost => MaterialPageRoute<void>(
-          builder: (_) => const ManagementTestPage(),
+          builder: (_) => CostManagementPage(planType: planType),
         ),
     };
   }

@@ -78,6 +78,13 @@ abstract final class DashboardFeatures {
     };
   }
 
+  static bool isFeatureAvailable(
+    DashboardFeatureId id,
+    SubscriptionPlanType planType,
+  ) {
+    return forPlanType(planType).any((feature) => feature.id == id);
+  }
+
   static SubscriptionPlanType planTypeFromApi(String plan) {
     final normalized = plan.toLowerCase();
     if (normalized.contains('owner')) return SubscriptionPlanType.owner;
