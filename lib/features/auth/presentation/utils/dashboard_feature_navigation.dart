@@ -1,9 +1,9 @@
 import 'package:cafelab_iot_mobile/features/auth/presentation/constants/dashboard_features.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/dashboard_feature_id.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
-import 'package:cafelab_iot_mobile/features/calibrations/presentation/calibrations_test_page.dart';
+import 'package:cafelab_iot_mobile/features/calibrations/presentation/grind_calibration_page.dart';
 import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_test_page.dart';
-import 'package:cafelab_iot_mobile/features/defects/presentation/defects_test_page.dart';
+import 'package:cafelab_iot_mobile/features/defects/presentation/defect_library_page.dart';
 import 'package:cafelab_iot_mobile/features/cost_management/presentation/cost_management_page.dart';
 import 'package:cafelab_iot_mobile/features/management/presentation/management_test_page.dart';
 import 'package:cafelab_iot_mobile/features/preparation/presentation/preparation_test_page.dart';
@@ -51,10 +51,10 @@ abstract final class DashboardFeatureNavigation {
           builder: (_) => const CuppingSessionsTestPage(),
         ),
       DashboardFeatureId.defectLibrary => MaterialPageRoute<void>(
-          builder: (_) => const DefectsTestPage(),
+          builder: (_) => DefectLibraryPage(planType: planType),
         ),
       DashboardFeatureId.grindCalibration => MaterialPageRoute<void>(
-          builder: (_) => const CalibrationsTestPage(),
+          builder: (_) => GrindCalibrationPage(planType: planType),
         ),
       DashboardFeatureId.recipes => MaterialPageRoute<void>(
           builder: (_) => const PreparationTestPage(),
