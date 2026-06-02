@@ -10,4 +10,6 @@ class ApiConfig {
   );
 
   static const String authBasePath = '/api/v1/authentication';
+  static const String supplierBasePath = '/api/v1/suppliers';
+  static const String coffeeLotsBasePath = '/api/v1/coffee-lots';
 }

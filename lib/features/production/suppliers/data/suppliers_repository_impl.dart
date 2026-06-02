@@ -9,7 +9,7 @@ import 'package:cafelab_iot_mobile/features/production/suppliers/domain/supplier
 
 class SuppliersRepositoryImpl implements SuppliersRepository {
   SuppliersRepositoryImpl({SuppliersApiService? apiService})
-      : _apiService = apiService ?? SuppliersApiService();
+    : _apiService = apiService ?? SuppliersApiService();
 
   final SuppliersApiService _apiService;
 
@@ -29,18 +29,6 @@ class SuppliersRepositoryImpl implements SuppliersRepository {
   @override
   Future<List<Supplier>> getAll() async {
     final list = await _apiService.getSuppliers();
-    return list.map(SupplierMapper.toDomain).toList();
-  }
-
-  @override
-  Future<Supplier> getById(int supplierId) async {
-    final result = await _apiService.getSupplierById(supplierId);
-    return SupplierMapper.toDomain(result);
-  }
-
-  @override
-  Future<List<Supplier>> getByUserId(int userId) async {
-    final list = await _apiService.getSuppliersByUserId(userId);
     return list.map(SupplierMapper.toDomain).toList();
   }
 

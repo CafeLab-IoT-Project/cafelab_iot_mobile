@@ -24,9 +24,23 @@ class ProductionApiException implements Exception {
       return errorResponse?.message ?? 'Recurso no encontrado';
     }
     if (statusCode == 400) {
-      return errorResponse?.userFriendlyValidation() ??
-          errorResponse?.message ??
-          'Error de validacion';
+      final validationMessage = errorResponse?.userFriendlyValidation();
+      if (validationMessage != null && validationMessage.isNotEmpty) {
+        return validationMessage;
+      }
+      if (errorResponse?.message case final backendMessage?
+          when backendMessage.isNotEmpty) {
+        if (rawBody != null &&
+            rawBody!.isNotEmpty &&
+            rawBody != backendMessage) {
+          return '$backendMessage\nDetalle tecnico: $rawBody';
+        }
+        return backendMessage;
+      }
+      if (rawBody != null && rawBody!.isNotEmpty) {
+        return 'Error de validacion\nDetalle tecnico: $rawBody';
+      }
+      return 'Error de validacion';
     }
     if (statusCode == 500) return 'Error interno del servidor';
     return errorResponse?.message ?? message;

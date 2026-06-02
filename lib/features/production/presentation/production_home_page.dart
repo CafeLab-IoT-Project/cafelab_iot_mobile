@@ -9,7 +9,7 @@ class ProductionHomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Production Module')),
+      appBar: AppBar(title: const Text('Modulo de Produccion')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -29,8 +29,8 @@ class ProductionHomePage extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.coffee_outlined),
-              title: const Text('Coffee Lots'),
-              subtitle: const Text('CRUD + filtros por supplier/user'),
+              title: const Text('Lotes de cafe'),
+              subtitle: const Text('Listado, detalle y mantenimiento'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(
@@ -42,8 +42,8 @@ class ProductionHomePage extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.local_shipping_outlined),
-              title: const Text('Suppliers'),
-              subtitle: const Text('CRUD + filtro por userId'),
+              title: const Text('Proveedores'),
+              subtitle: const Text('Listado, detalle y mantenimiento'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(
