@@ -30,24 +30,6 @@ class RoastProfilesRepositoryImpl implements RoastProfilesRepository {
   }
 
   @override
-  Future<RoastProfile> getById(int roastProfileId) async {
-    final dto = await _apiService.getById(roastProfileId);
-    return RoastProfileMapper.toDomain(dto);
-  }
-
-  @override
-  Future<List<RoastProfile>> getByCoffeeLotId(int coffeeLotId) async {
-    final list = await _apiService.getByCoffeeLotId(coffeeLotId);
-    return list.map(RoastProfileMapper.toDomain).toList();
-  }
-
-  @override
-  Future<List<RoastProfile>> getByUserId(int userId) async {
-    final list = await _apiService.getByUserId(userId);
-    return list.map(RoastProfileMapper.toDomain).toList();
-  }
-
-  @override
   Future<RoastProfile> update(int roastProfileId, UpdateRoastProfileInput input) async {
     final dto = UpdateRoastProfileRequestDto.fromInput(input);
     final response = await _apiService.update(roastProfileId, dto);

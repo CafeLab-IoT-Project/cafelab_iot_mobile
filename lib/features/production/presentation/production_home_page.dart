@@ -16,8 +16,8 @@ class ProductionHomePage extends StatelessWidget {
           Card(
             child: ListTile(
               leading: const Icon(Icons.local_fire_department_outlined),
-              title: const Text('Roast Profiles'),
-              subtitle: const Text('CRUD + filtros por lot/user'),
+              title: const Text('Perfiles de tueste'),
+              subtitle: const Text('Listado, detalle y comparacion'),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 Navigator.of(context).push(
