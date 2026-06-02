@@ -20,7 +20,8 @@ class RoastProfilesApiService {
   final http.Client _client;
   final TokenStorageService _tokenStorage;
 
-  Uri get _baseUri => Uri.parse('${ApiConfig.baseUrl}/api/v1/roast-profile');
+  Uri get _baseUri =>
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.roastProfilesBasePath}');
 
   Future<Map<String, String>> _authHeaders() async {
     final token = await _tokenStorage.getToken();
@@ -53,37 +54,6 @@ class RoastProfilesApiService {
   Future<List<RoastProfileResponseDto>> getAll() async {
     final response = await _send(method: 'GET', uri: _baseUri);
     if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<List<RoastProfileResponseDto>> getByUserId(int userId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/profile/$userId'),
-    );
-    if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<List<RoastProfileResponseDto>> getByCoffeeLotId(int coffeeLotId) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/lot/$coffeeLotId'),
-    );
-    if (response.statusCode == HttpStatus.ok) return _parseList(response.body);
-    throw _mapError(response.statusCode, response.body);
-  }
-
-  Future<RoastProfileResponseDto> getById(int id) async {
-    final response = await _send(
-      method: 'GET',
-      uri: Uri.parse('${_baseUri.toString()}/$id'),
-    );
-    if (response.statusCode == HttpStatus.ok) {
-      return RoastProfileResponseDto.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>,
-      );
-    }
     throw _mapError(response.statusCode, response.body);
   }
 
@@ -165,7 +135,7 @@ class RoastProfilesApiService {
       } catch (_) {}
     }
     return ProductionApiException(
-      'Error en Roast Profiles',
+      'Error en perfiles de tueste',
       statusCode: statusCode,
       errorResponse: parsed,
       rawBody: body,

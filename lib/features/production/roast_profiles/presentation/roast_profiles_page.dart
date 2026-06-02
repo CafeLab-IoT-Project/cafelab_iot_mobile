@@ -1,8 +1,14 @@
-import 'dart:convert';
-
-import 'package:cafelab_iot_mobile/features/production/roast_profiles/domain/models/create_roast_profile_input.dart';
-import 'package:cafelab_iot_mobile/features/production/roast_profiles/domain/models/update_roast_profile_input.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/constants/auth_colors.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/auth_primary_button.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/authenticated_scaffold.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/domain/models/roast_profile.dart';
 import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/roast_profiles_controller.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profile_comparison_page.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profile_detail_dialog.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profile_form_dialog.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profiles_common.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profiles_table.dart';
+import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/widgets/roast_profiles_toolbar.dart';
 import 'package:flutter/material.dart';
 
 class RoastProfilesPage extends StatefulWidget {
@@ -13,331 +19,410 @@ class RoastProfilesPage extends StatefulWidget {
 }
 
 class _RoastProfilesPageState extends State<RoastProfilesPage> {
-  final controller = RoastProfilesController();
-  final _nameCtrl = TextEditingController();
-  final _typeCtrl = TextEditingController();
-  final _durationCtrl = TextEditingController();
-  final _tempStartCtrl = TextEditingController();
-  final _tempEndCtrl = TextEditingController();
-  final _lotCtrl = TextEditingController();
-  final _favoriteCtrl = ValueNotifier<bool>(false);
-  final _idCtrl = TextEditingController();
-  final _userFilterCtrl = TextEditingController();
-  final _lotFilterCtrl = TextEditingController();
+  final RoastProfilesController controller = RoastProfilesController();
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _horizontalTableController = ScrollController();
+  final ScrollController _verticalTableController = ScrollController();
 
   @override
   void initState() {
     super.initState();
+    _searchController.addListener(_handleSearchChanged);
     controller.loadAll();
   }
 
   @override
   void dispose() {
     controller.dispose();
-    _nameCtrl.dispose();
-    _typeCtrl.dispose();
-    _durationCtrl.dispose();
-    _tempStartCtrl.dispose();
-    _tempEndCtrl.dispose();
-    _lotCtrl.dispose();
-    _favoriteCtrl.dispose();
-    _idCtrl.dispose();
-    _userFilterCtrl.dispose();
-    _lotFilterCtrl.dispose();
+    _searchController
+      ..removeListener(_handleSearchChanged)
+      ..dispose();
+    _horizontalTableController.dispose();
+    _verticalTableController.dispose();
     super.dispose();
   }
 
-  CreateRoastProfileInput? _buildCreateInput() {
-    final duration = int.tryParse(_durationCtrl.text.trim());
-    final tempStart = double.tryParse(_tempStartCtrl.text.trim());
-    final tempEnd = double.tryParse(_tempEndCtrl.text.trim());
-    final lot = int.tryParse(_lotCtrl.text.trim());
-    if (_nameCtrl.text.trim().isEmpty ||
-        _typeCtrl.text.trim().isEmpty ||
-        duration == null ||
-        duration <= 0 ||
-        tempStart == null ||
-        tempEnd == null ||
-        lot == null ||
-        lot <= 0) {
-      return null;
+  void _handleSearchChanged() {
+    controller.updateSearchQuery(_searchController.text);
+  }
+
+  Future<void> _reloadProfiles() async {
+    await controller.loadAll();
+  }
+
+  void _showSuccessSnackBarIfNeeded() {
+    final message = controller.consumeActionMessage();
+    if (!mounted || message == null || message.isEmpty) {
+      return;
     }
-    return CreateRoastProfileInput(
-      name: _nameCtrl.text.trim(),
-      type: _typeCtrl.text.trim(),
-      duration: duration,
-      tempStart: tempStart,
-      tempEnd: tempEnd,
-      lot: lot,
-      isFavorite: _favoriteCtrl.value,
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void _showMissingLotsSnackBar() {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Registra tu primer lote de cafe para crear un perfil de tueste',
+          ),
+        ),
+      );
+  }
+
+  Future<void> _openCreateDialog() async {
+    if (!controller.hasCoffeeLots) {
+      _showMissingLotsSnackBar();
+      return;
+    }
+
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RoastProfileFormDialog(
+        coffeeLots: controller.coffeeLots,
+        title: 'Nuevo perfil de tueste',
+        submitLabel: 'Registrar perfil de tueste',
+        onSubmit: (value) async {
+          final success = await controller.create(value.toCreateInput());
+          if (success) {
+            _showSuccessSnackBarIfNeeded();
+            return null;
+          }
+          return controller.errorMessage ??
+              'No se pudo registrar el perfil de tueste.';
+        },
+      ),
     );
   }
 
-  UpdateRoastProfileInput? _buildUpdateInput() {
-    final create = _buildCreateInput();
-    if (create == null) return null;
-    return UpdateRoastProfileInput(
-      name: create.name,
-      type: create.type,
-      duration: create.duration,
-      tempStart: create.tempStart,
-      tempEnd: create.tempEnd,
-      lot: create.lot,
-      isFavorite: _favoriteCtrl.value,
+  Future<void> _openEditDialog(RoastProfile profile) async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RoastProfileFormDialog(
+        profile: profile,
+        coffeeLots: controller.coffeeLots,
+        title: 'Editar perfil de tueste',
+        submitLabel: 'Guardar perfil de tueste',
+        onSubmit: (value) async {
+          final success = await controller.update(
+            profile.id,
+            value.toUpdateInput(),
+          );
+          if (success) {
+            _showSuccessSnackBarIfNeeded();
+            return null;
+          }
+          return controller.errorMessage ??
+              'No se pudo actualizar el perfil de tueste.';
+        },
+      ),
     );
   }
 
-  void _showJson(String title, Map<String, dynamic> jsonMap) {
-    showDialog<void>(
+  Future<void> _openDetailDialog(RoastProfile profile) async {
+    controller.selectProfile(profile);
+
+    await showDialog<void>(
+      context: context,
+      builder: (_) => RoastProfileDetailDialog(
+        profile: profile,
+        lotLabel: controller.lotLabelFor(profile.coffeeLotId),
+      ),
+    );
+  }
+
+  Future<void> _confirmDelete(RoastProfile profile) async {
+    final shouldDelete = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(title),
-        content: SingleChildScrollView(
-          child: SelectableText(const JsonEncoder.withIndent('  ').convert(jsonMap)),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Eliminar perfil de tueste'),
+        content: Text('Deseas eliminar ${profile.name}?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cerrar'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFD54545),
+            ),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Eliminar'),
           ),
         ],
       ),
     );
+
+    if (shouldDelete != true) {
+      return;
+    }
+
+    final success = await controller.delete(profile.id);
+    if (success) {
+      _showSuccessSnackBarIfNeeded();
+    }
+  }
+
+  Future<void> _toggleFavorite(RoastProfile profile) async {
+    final success = await controller.toggleFavorite(profile);
+    if (success) {
+      _showSuccessSnackBarIfNeeded();
+    }
+  }
+
+  Future<void> _openComparisonPage({
+    RoastProfile? primary,
+  }) async {
+    final items = controller.items;
+    if (items.length < 2) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Necesitas al menos dos perfiles para comparar.'),
+          ),
+        );
+      return;
+    }
+
+    final left = primary ?? controller.compareLeft ?? items.first;
+    final fallbackRight = items.firstWhere(
+      (item) => item.id != left.id,
+      orElse: () => items.last,
+    );
+    final right = controller.compareRight?.id == left.id
+        ? fallbackRight
+        : controller.compareRight ?? fallbackRight;
+
+    controller.setComparisonProfiles(left: left, right: right);
+
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => RoastProfileComparisonPage(
+          profiles: controller.items,
+          initialLeft: left,
+          initialRight: right,
+          controller: controller,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openFilterSheet() async {
+    String? pendingType = controller.typeFilter;
+    bool pendingFavorites = controller.favoritesOnly;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Filtrar perfiles',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF3E4234),
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  DropdownButtonFormField<String>(
+                    initialValue: pendingType,
+                    items: roastProfileTypeOptions
+                        .map(
+                          (option) => DropdownMenuItem<String>(
+                            value: option,
+                            child: Text(
+                              option,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setModalState(() {
+                        pendingType = value;
+                      });
+                    },
+                    decoration: roundedFieldDecoration('Tipo de cafe'),
+                    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+                    borderRadius: BorderRadius.circular(18),
+                    dropdownColor: Colors.white,
+                  ),
+                  const SizedBox(height: 10),
+                  SwitchListTile.adaptive(
+                    value: pendingFavorites,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('Solo favoritos'),
+                    activeThumbColor: AuthColors.primary,
+                    onChanged: (value) {
+                      setModalState(() {
+                        pendingFavorites = value;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 14),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            controller.clearFilters();
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('Limpiar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: AuthPrimaryButton(
+                          label: 'Aplicar',
+                          onPressed: () {
+                            controller.updateTypeFilter(pendingType);
+                            controller.setFavoritesOnly(pendingFavorites);
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _goBackToFeatures() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Roast Profiles')),
-      body: AnimatedBuilder(
-        animation: controller,
-        builder: (context, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (controller.isLoading) const LinearProgressIndicator(),
-                if (controller.errorMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(
-                      controller.errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-                if (controller.lastActionMessage != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Text(controller.lastActionMessage!),
-                  ),
-                const SizedBox(height: 12),
-                const Text('Crear / Editar'),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _nameCtrl,
-                  decoration: const InputDecoration(labelText: 'name *'),
-                ),
-                TextField(
-                  controller: _typeCtrl,
-                  decoration: const InputDecoration(labelText: 'type *'),
-                ),
-                TextField(
-                  controller: _durationCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'duration *'),
-                ),
-                TextField(
-                  controller: _tempStartCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'tempStart *'),
-                ),
-                TextField(
-                  controller: _tempEndCtrl,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'tempEnd *'),
-                ),
-                TextField(
-                  controller: _lotCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'lot *'),
-                ),
-                const SizedBox(height: 8),
-                ValueListenableBuilder<bool>(
-                  valueListenable: _favoriteCtrl,
-                  builder: (_, value, __) => SwitchListTile(
-                    title: const Text('isFavorite'),
-                    value: value,
-                    onChanged: (v) => _favoriteCtrl.value = v,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                ElevatedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final input = _buildCreateInput();
-                          if (input == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Datos invalidos para crear')),
-                            );
-                            return;
-                          }
-                          await controller.create(input);
-                        },
-                  child: const Text('Create'),
-                ),
-                Row(
+    return AuthenticatedScaffold(
+      onFeatures: _goBackToFeatures,
+      body: ColoredBox(
+        color: AuthColors.profileScreenBackground,
+        child: SafeArea(
+          top: false,
+          child: AnimatedBuilder(
+            animation: controller,
+            builder: (context, _) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(18, 20, 18, 18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _idCtrl,
-                        keyboardType: TextInputType.number,
-                        decoration: const InputDecoration(labelText: 'id para detalle/editar/eliminar'),
+                    const Text(
+                      'Inicio > Perfiles de tueste',
+                      style: TextStyle(
+                        color: Color(0xFF4E5342),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                    const SizedBox(height: 18),
+                    RoastProfilesToolbar(
+                      searchController: _searchController,
+                      isLoading: controller.isLoading,
+                      canCreate: controller.hasCoffeeLots,
+                      sortOldestFirst: controller.sortOldestFirst,
+                      onCreatePressed: _openCreateDialog,
+                      onFilterPressed: _openFilterSheet,
+                      onSortPressed: controller.toggleSortOrder,
+                      onComparePressed: _openComparisonPage,
+                    ),
+                    const SizedBox(height: 16),
+                    if (controller.isLoading)
+                      const ClipRRect(
+                        borderRadius: BorderRadius.all(Radius.circular(12)),
+                        child: LinearProgressIndicator(minHeight: 5),
+                      ),
+                    if (controller.isLoading) const SizedBox(height: 12),
+                    if (controller.errorMessage != null) ...[
+                      MessageBanner(
+                        message: controller.errorMessage!,
+                        backgroundColor: const Color(0xFFF8D9D9),
+                        foregroundColor: const Color(0xFF8C1D1D),
+                        onRetry: _reloadProfiles,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    Expanded(child: _buildContent()),
                   ],
                 ),
-                ElevatedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final id = int.tryParse(_idCtrl.text.trim());
-                          if (id == null) return;
-                          await controller.getById(id);
-                          final selected = controller.selected;
-                          if (selected != null && context.mounted) {
-                            _showJson('Detalle Roast Profile', {
-                              'id': selected.id,
-                              'userId': selected.userId,
-                              'name': selected.name,
-                              'type': selected.type,
-                              'duration': selected.duration,
-                              'tempStart': selected.tempStart,
-                              'tempEnd': selected.tempEnd,
-                              'coffeeLotId': selected.coffeeLotId,
-                              'isFavorite': selected.isFavorite,
-                            });
-                          }
-                        },
-                  child: const Text('Get By Id'),
-                ),
-                ElevatedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final id = int.tryParse(_idCtrl.text.trim());
-                          final input = _buildUpdateInput();
-                          if (id == null || input == null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('id o datos invalidos para editar')),
-                            );
-                            return;
-                          }
-                          await controller.update(id, input);
-                        },
-                  child: const Text('Update By Id'),
-                ),
-                OutlinedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final id = int.tryParse(_idCtrl.text.trim());
-                          if (id == null) return;
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (_) => AlertDialog(
-                              title: const Text('Confirmar eliminacion'),
-                              content: Text('Eliminar roast profile $id?'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
-                                  child: const Text('Cancelar'),
-                                ),
-                                TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
-                                  child: const Text('Eliminar'),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirmed == true) {
-                            await controller.delete(id);
-                          }
-                        },
-                  child: const Text('Delete By Id'),
-                ),
-                const Divider(height: 24),
-                const Text('Filtros'),
-                TextField(
-                  controller: _userFilterCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'userId'),
-                ),
-                ElevatedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final id = int.tryParse(_userFilterCtrl.text.trim());
-                          if (id == null) return;
-                          await controller.filterByUserId(id);
-                        },
-                  child: const Text('Filtrar por userId'),
-                ),
-                TextField(
-                  controller: _lotFilterCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'coffeeLotId'),
-                ),
-                ElevatedButton(
-                  onPressed: controller.isLoading
-                      ? null
-                      : () async {
-                          final id = int.tryParse(_lotFilterCtrl.text.trim());
-                          if (id == null) return;
-                          await controller.filterByLotId(id);
-                        },
-                  child: const Text('Filtrar por lot'),
-                ),
-                OutlinedButton(
-                  onPressed: controller.isLoading ? null : controller.loadAll,
-                  child: const Text('Recargar todos'),
-                ),
-                const Divider(height: 24),
-                const Text('Listado'),
-                if (!controller.isLoading && controller.items.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 16),
-                    child: Text('Sin datos'),
-                  ),
-                ...controller.items.map(
-                  (item) => Card(
-                    child: ListTile(
-                      title: Text('${item.name} (${item.type})'),
-                      subtitle: Text(
-                        'id=${item.id} lot=${item.coffeeLotId} duration=${item.duration} fav=${item.isFavorite}',
-                      ),
-                      onTap: () {
-                        _showJson('Roast Profile ${item.id}', {
-                          'id': item.id,
-                          'userId': item.userId,
-                          'name': item.name,
-                          'type': item.type,
-                          'duration': item.duration,
-                          'tempStart': item.tempStart,
-                          'tempEnd': item.tempEnd,
-                          'coffeeLotId': item.coffeeLotId,
-                          'isFavorite': item.isFavorite,
-                        });
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+              );
+            },
+          ),
+        ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (controller.isLoading && !controller.hasLoaded) {
+      return const Center(
+        child: CircularProgressIndicator(color: AuthColors.primary),
+      );
+    }
+
+    if (controller.errorMessage != null && !controller.hasItems) {
+      return const EmptyStateCard(
+        title: 'No se pudieron cargar los perfiles',
+        message: 'Intenta nuevamente en unos segundos.',
+      );
+    }
+
+    if (!controller.hasCoffeeLots && controller.hasLoaded && !controller.hasItems) {
+      return const EmptyStateCard(
+        title: 'Aun no tienes lotes registrados',
+        message: 'Registra tu primer lote de cafe para crear un perfil de tueste',
+      );
+    }
+
+    if (!controller.hasItems && controller.hasLoaded) {
+      return const EmptyStateCard(
+        title: 'Aun no tienes perfiles registrados',
+        message: 'Registra tu primer perfil de tueste para verlo en esta tabla.',
+      );
+    }
+
+    if (controller.hasItems && controller.items.isEmpty) {
+      return const EmptyStateCard(
+        title: 'Sin coincidencias',
+        message: 'No encontramos perfiles de tueste con ese criterio de busqueda.',
+      );
+    }
+
+    return RoastProfilesTable(
+      items: controller.items,
+      horizontalController: _horizontalTableController,
+      verticalController: _verticalTableController,
+      lotLabelBuilder: controller.lotLabelFor,
+      onFavorite: _toggleFavorite,
+      onView: _openDetailDialog,
+      onEdit: _openEditDialog,
+      onCompare: (profile) => _openComparisonPage(primary: profile),
+      onDelete: _confirmDelete,
     );
   }
 }
