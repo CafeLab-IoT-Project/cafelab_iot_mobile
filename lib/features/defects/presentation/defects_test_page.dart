@@ -140,7 +140,7 @@ class _DefectsTestPageState extends State<DefectsTestPage> {
       label: 'LOAD_DEFECTS',
       action: () async {
         final defects = await _repo.getDefects();
-        final raw = defects.map((e) => e.raw).toList();
+        final raw = defects.map((e) => e.toJson()).toList();
         _setResult(
           'Defectos cargados: ${defects.length}',
           const JsonEncoder.withIndent('  ').convert(raw),

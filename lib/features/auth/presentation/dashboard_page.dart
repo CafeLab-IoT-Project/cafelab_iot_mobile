@@ -93,8 +93,11 @@ class _DashboardPageState extends State<DashboardPage> {
                       final feature = features[index];
                       return DashboardFeatureCard(
                         feature: feature,
-                        onTap: () =>
-                            DashboardFeatureNavigation.open(context, feature.id),
+                        onTap: () => DashboardFeatureNavigation.open(
+                          context,
+                          feature.id,
+                          planType: widget.planType,
+                        ),
                       );
                     },
                     childCount: features.length,
