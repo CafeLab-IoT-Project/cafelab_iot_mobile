@@ -1,7 +1,8 @@
 import 'package:cafelab_iot_mobile/features/auth/presentation/auth_test_page.dart';
+import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 import 'package:cafelab_iot_mobile/features/calibrations/presentation/calibrations_test_page.dart';
 import 'package:cafelab_iot_mobile/features/coffees/presentation/coffees_test_page.dart';
-import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_test_page.dart';
+import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_page.dart';
 import 'package:cafelab_iot_mobile/features/defects/presentation/defects_test_page.dart';
 import 'package:cafelab_iot_mobile/features/management/presentation/management_test_page.dart';
 import 'package:cafelab_iot_mobile/features/preparation/presentation/preparation_test_page.dart';
@@ -81,7 +82,9 @@ class AuthModuleHomePage extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const CuppingSessionsTestPage(),
+                    builder: (_) => const CuppingSessionsPage(
+                      planType: SubscriptionPlanType.full,
+                    ),
                   ),
                 );
               },

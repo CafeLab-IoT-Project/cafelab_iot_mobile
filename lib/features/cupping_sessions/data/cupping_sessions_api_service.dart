@@ -21,7 +21,7 @@ class CuppingSessionsApiService {
   final TokenStorageService _tokenStorage;
 
   Uri get _baseUri =>
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/cupping-sessions');
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.cuppingSessionsBasePath}');
 
   Future<Map<String, String>> _headers({bool includeContentType = true}) async {
     final token = await _tokenStorage.getToken();
