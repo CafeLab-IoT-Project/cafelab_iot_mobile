@@ -5,7 +5,7 @@ import 'package:cafelab_iot_mobile/features/calibrations/presentation/grind_cali
 import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_test_page.dart';
 import 'package:cafelab_iot_mobile/features/defects/presentation/defect_library_page.dart';
 import 'package:cafelab_iot_mobile/features/cost_management/presentation/cost_management_page.dart';
-import 'package:cafelab_iot_mobile/features/management/presentation/management_test_page.dart';
+import 'package:cafelab_iot_mobile/features/management/presentation/inventory_page.dart';
 import 'package:cafelab_iot_mobile/features/preparation/presentation/preparation_test_page.dart';
 import 'package:cafelab_iot_mobile/features/production/coffee_lots/presentation/coffee_lots_page.dart';
 import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/roast_profiles_page.dart';
@@ -70,7 +70,7 @@ abstract final class DashboardFeatureNavigation {
           builder: (_) => const RoastProfilesPage(),
         ),
       DashboardFeatureId.inventory => MaterialPageRoute<void>(
-          builder: (_) => const ManagementTestPage(),
+          builder: (_) => const InventoryPage(),
         ),
       DashboardFeatureId.productionCost => MaterialPageRoute<void>(
           builder: (_) => CostManagementPage(planType: planType),

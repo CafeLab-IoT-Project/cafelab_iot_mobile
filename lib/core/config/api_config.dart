@@ -13,4 +13,5 @@ class ApiConfig {
   static const String supplierBasePath = '/api/v1/suppliers';
   static const String coffeeLotsBasePath = '/api/v1/coffee-lots';
   static const String roastProfilesBasePath = '/api/v1/roast-profile';
+  static const String inventoryEntriesBasePath = '/api/v1/inventory-entries';
 }
