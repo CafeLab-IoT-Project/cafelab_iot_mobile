@@ -21,7 +21,8 @@ class ManagementApiService {
   final http.Client _client;
   final TokenStorageService _tokenStorage;
 
-  Uri get _baseUri => Uri.parse('${ApiConfig.baseUrl}/api/v1/inventory-entries');
+  Uri get _baseUri =>
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.inventoryEntriesBasePath}');
 
   Future<Map<String, String>> _headers({bool includeContentType = false}) async {
     final token = await _tokenStorage.getToken();
