@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 String cuppingSessionDateToWire(DateTime date) {
   final y = date.year.toString().padLeft(4, '0');
   final m = date.month.toString().padLeft(2, '0');
@@ -33,16 +35,23 @@ class CuppingSession {
   final String? roastStyleNotes;
 
   factory CuppingSession.fromJson(Map<String, dynamic> json) {
+    final rawResults = json['resultsJson'];
     return CuppingSession(
-      id: (json['id'] as num).toInt(),
-      userId: (json['userId'] as num).toInt(),
-      name: json['name'] as String,
-      origin: json['origin'] as String,
-      variety: json['variety'] as String,
-      processing: json['processing'] as String,
-      sessionDate: cuppingSessionDateFromWire(json['sessionDate'] as String),
-      favorite: json['favorite'] as bool,
-      resultsJson: json['resultsJson'] as String?,
+      id: (json['id'] as num?)?.toInt() ?? 0,
+      userId: (json['userId'] as num?)?.toInt() ?? 0,
+      name: (json['name'] ?? '') as String,
+      origin: (json['origin'] ?? '') as String,
+      variety: (json['variety'] ?? '') as String,
+      processing: (json['processing'] ?? '') as String,
+      sessionDate: cuppingSessionDateFromWire(
+        (json['sessionDate'] ?? DateTime.now().toIso8601String()) as String,
+      ),
+      favorite: (json['favorite'] as bool?) ?? false,
+      resultsJson: rawResults is String
+          ? rawResults
+          : rawResults == null
+          ? null
+          : jsonEncode(rawResults),
       roastStyleNotes: json['roastStyleNotes'] as String?,
     );
   }

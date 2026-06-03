@@ -2,7 +2,7 @@ import 'package:cafelab_iot_mobile/features/auth/presentation/constants/dashboar
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/dashboard_feature_id.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 import 'package:cafelab_iot_mobile/features/calibrations/presentation/grind_calibration_page.dart';
-import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_test_page.dart';
+import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cupping_sessions_page.dart';
 import 'package:cafelab_iot_mobile/features/defects/presentation/defect_library_page.dart';
 import 'package:cafelab_iot_mobile/features/cost_management/presentation/cost_management_page.dart';
 import 'package:cafelab_iot_mobile/features/management/presentation/inventory_page.dart';
@@ -48,7 +48,7 @@ abstract final class DashboardFeatureNavigation {
   }) {
     return switch (id) {
       DashboardFeatureId.cuppingSessions => MaterialPageRoute<void>(
-          builder: (_) => const CuppingSessionsTestPage(),
+          builder: (_) => CuppingSessionsPage(planType: planType),
         ),
       DashboardFeatureId.defectLibrary => MaterialPageRoute<void>(
           builder: (_) => DefectLibraryPage(planType: planType),
