@@ -6,6 +6,7 @@ import 'package:cafelab_iot_mobile/features/cupping_sessions/presentation/cuppin
 import 'package:cafelab_iot_mobile/features/defects/presentation/defect_library_page.dart';
 import 'package:cafelab_iot_mobile/features/cost_management/presentation/cost_management_page.dart';
 import 'package:cafelab_iot_mobile/features/management/presentation/inventory_page.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/presentation/lots_selection_page.dart';
 import 'package:cafelab_iot_mobile/features/preparation/presentation/preparation_test_page.dart';
 import 'package:cafelab_iot_mobile/features/production/coffee_lots/presentation/coffee_lots_page.dart';
 import 'package:cafelab_iot_mobile/features/production/roast_profiles/presentation/roast_profiles_page.dart';
@@ -59,7 +60,6 @@ abstract final class DashboardFeatureNavigation {
       DashboardFeatureId.recipes => MaterialPageRoute<void>(
           builder: (_) => const PreparationTestPage(),
         ),
-      DashboardFeatureId.monitoring => null,
       DashboardFeatureId.suppliers => MaterialPageRoute<void>(
           builder: (_) => const SuppliersPage(),
         ),
@@ -74,6 +74,9 @@ abstract final class DashboardFeatureNavigation {
         ),
       DashboardFeatureId.productionCost => MaterialPageRoute<void>(
           builder: (_) => CostManagementPage(planType: planType),
+        ),
+      DashboardFeatureId.monitoring => MaterialPageRoute<void>(
+          builder: (_) => LotsSelectionPage(planType: planType), 
         ),
     };
   }

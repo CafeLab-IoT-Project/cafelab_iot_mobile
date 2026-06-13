@@ -35,4 +35,10 @@ class CoffeeLotsRepositoryImpl implements CoffeeLotsRepository {
     final result = await _apiService.update(coffeeLotId, dto);
     return CoffeeLotMapper.toDomain(result);
   }
+  
+  @override
+  Future<List<CoffeeLot>> getByProfileId() async {
+    final list = await _apiService.getByProfileId();
+    return list.map(CoffeeLotMapper.toDomain).toList();
+  }
 }

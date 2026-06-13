@@ -7,4 +7,5 @@ abstract class CoffeeLotsRepository {
   Future<List<CoffeeLot>> getAll();
   Future<CoffeeLot> update(int coffeeLotId, UpdateCoffeeLotInput input);
   Future<String> delete(int coffeeLotId);
+  Future<List<CoffeeLot>> getByProfileId();
 }

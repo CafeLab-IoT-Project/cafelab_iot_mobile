@@ -15,4 +15,5 @@ class ApiConfig {
   static const String roastProfilesBasePath = '/api/v1/roast-profile';
   static const String inventoryEntriesBasePath = '/api/v1/inventory-entries';
   static const String cuppingSessionsBasePath = '/api/v1/cupping-sessions';
+  static const String monitoringBasePath = '/api/v1/environment-thresholds';
 }
