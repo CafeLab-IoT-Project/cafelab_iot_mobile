@@ -57,6 +57,18 @@ class CoffeeLotsApiService {
     throw _mapError(response.statusCode, response.body);
   }
 
+  Future<List<CoffeeLotResponseDto>> getByProfileId() async {
+    final response = await _send(
+      method: 'GET',
+      uri: _baseUri,
+    );
+    
+    if (response.statusCode == HttpStatus.ok) {
+      return _parseList(response.body);
+    }
+    throw _mapError(response.statusCode, response.body);
+  }
+
   Future<CoffeeLotResponseDto> update(
     int id,
     UpdateCoffeeLotRequestDto dto,
