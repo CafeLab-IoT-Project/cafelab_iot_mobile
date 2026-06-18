@@ -65,10 +65,16 @@ abstract final class DashboardFeatures {
     ),
   ];
 
-  static const full = [
-    ...barista,
-    ...owner,
-  ];
+  static List<DashboardFeatureItem> get full {
+    final items = <DashboardFeatureItem>[];
+    final seen = <DashboardFeatureId>{};
+    for (final feature in [...barista, ...owner]) {
+      if (seen.add(feature.id)) {
+        items.add(feature);
+      }
+    }
+    return items;
+  }
 
   static List<DashboardFeatureItem> forPlanType(SubscriptionPlanType type) {
     return switch (type) {
