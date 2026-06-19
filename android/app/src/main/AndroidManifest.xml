@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Requerido para acceso a red en builds de release (debug lo agrega el tooling). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="cafelab_iot_mobile"
         android:name="${applicationName}"
