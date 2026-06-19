@@ -15,6 +15,8 @@ class MonitoringPageController extends ChangeNotifier {
 
   EnvironmentThreshold? threshold;
   TelemetryRecord? latestTelemetry;
+  
+  List<TelemetryRecord> telemetryHistory = []; 
 
   Future<void> loadDashboardData(int lotId) async {
     isLoading = true;
@@ -29,8 +31,13 @@ class MonitoringPageController extends ChangeNotifier {
       }
 
       final telemetryList = await _repository.getTelemetryByLotId(lotId);
+      
+      telemetryHistory = telemetryList; 
+
       if (telemetryList.isNotEmpty) {
         latestTelemetry = telemetryList.last;
+      } else {
+        latestTelemetry = null;
       }
     } catch (e) {
       errorMessage = e.toString();

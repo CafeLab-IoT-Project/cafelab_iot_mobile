@@ -4,8 +4,11 @@ import 'package:cafelab_iot_mobile/features/auth/presentation/edit_profile_sessi
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/authenticated_scaffold.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/environment_threshold.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/domain/models/telemetry_record.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/presentation/monitoring_page_controller.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/presentation/widgets/monitoring_form_view.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/presentation/widgets/monitoring_trend_chart.dart';
+
 import 'package:flutter/material.dart';
 
 enum _MonitoringMode { dashboard, settingsMenu, adjustTemp, adjustHumidity }
@@ -175,6 +178,8 @@ class _MonitoringPageState extends State<MonitoringPage> {
     switch (_currentMode) {
       case _MonitoringMode.dashboard:
         final t = _controller.latestTelemetry;
+        final List<TelemetryRecord> historyData = _controller.telemetryHistory;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -194,6 +199,9 @@ class _MonitoringPageState extends State<MonitoringPage> {
               Icons.water_drop, 
               Colors.blue
             ),
+            
+            const SizedBox(height: 16),
+            MonitoringTrendChart(telemetryRecords: historyData),
             
             const SizedBox(height: 32),
             FilledButton.icon(
