@@ -4,8 +4,12 @@ import 'package:cafelab_iot_mobile/features/auth/presentation/edit_profile_sessi
 import 'package:cafelab_iot_mobile/features/auth/presentation/models/subscription_plan.dart';
 import 'package:cafelab_iot_mobile/features/auth/presentation/widgets/authenticated_scaffold.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/environment_threshold.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/domain/models/telemetry_record.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/presentation/monitoring_page_controller.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/presentation/widgets/monitoring_alerts_view.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/presentation/widgets/monitoring_form_view.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/presentation/widgets/monitoring_trend_chart.dart';
+
 import 'package:flutter/material.dart';
 
 enum _MonitoringMode { dashboard, settingsMenu, adjustTemp, adjustHumidity }
@@ -175,6 +179,11 @@ class _MonitoringPageState extends State<MonitoringPage> {
     switch (_currentMode) {
       case _MonitoringMode.dashboard:
         final t = _controller.latestTelemetry;
+        final allHistory = _controller.telemetryHistory;
+        final List<TelemetryRecord> historyData = allHistory.length > 10 
+            ? allHistory.sublist(allHistory.length - 10) 
+            : allHistory;
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -195,7 +204,13 @@ class _MonitoringPageState extends State<MonitoringPage> {
               Colors.blue
             ),
             
-            const SizedBox(height: 32),
+            const SizedBox(height: 16),
+            MonitoringTrendChart(telemetryRecords: historyData),
+            
+            const SizedBox(height: 16),
+            MonitoringAlertsView(alerts: _controller.alertsHistory),
+            
+            const SizedBox(height: 24),
             FilledButton.icon(
               onPressed: _goToSettingsMenu,
               icon: const Icon(Icons.tune),

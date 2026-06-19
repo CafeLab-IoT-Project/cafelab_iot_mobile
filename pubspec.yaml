@@ -19,6 +19,7 @@ dependencies:
   geolocator: ^13.0.2
   image_picker: ^1.0.7
   firebase_core: ^4.2.1
+  fl_chart: ^0.66.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
