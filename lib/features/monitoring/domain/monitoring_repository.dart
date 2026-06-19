@@ -1,4 +1,5 @@
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/environment_threshold.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/domain/models/monitoring_alert.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/telemetry_record.dart';
 
 abstract class MonitoringRepository {
@@ -6,4 +7,7 @@ abstract class MonitoringRepository {
   Future<EnvironmentThreshold> getThresholdByLotId(int coffeeLotId);
   Future<EnvironmentThreshold> updateThreshold(int coffeeLotId, EnvironmentThreshold threshold);
   Future<List<TelemetryRecord>> getTelemetryByLotId(int coffeeLotId);
+  Future<List<MonitoringAlert>> getAlertsByLotId(int lotId);
+  Future<void> markAlertAsRead(int alertId);
+  
 }
