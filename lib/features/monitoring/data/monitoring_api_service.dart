@@ -6,6 +6,7 @@ import 'package:cafelab_iot_mobile/core/config/api_config.dart';
 import 'package:cafelab_iot_mobile/features/auth/data/token_storage_service.dart';
 import 'package:cafelab_iot_mobile/features/defects/domain/models/api_message_error.dart'; 
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/environment_threshold.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/domain/models/monitoring_alert.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/telemetry_record.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -107,6 +108,40 @@ class MonitoringApiService {
     throw _mapHttpError(response.statusCode, response.body);
   }
 
+  // 5. GET: Obtener alertas de un lote específico
+  Future<List<dynamic>> getAlertsByLotId(int lotId) async {
+    final headers = await _authHeaders();
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/monitoring-alerts/coffee-lot/$lotId');
+    
+    final response = await _send(
+      method: 'GET', 
+      uri: uri, 
+      headers: headers
+    );
+    
+    if (response.statusCode == HttpStatus.ok) {
+      // Retornamos el JSON decodificado como lista cruda
+      return jsonDecode(response.body) as List<dynamic>;
+    }
+    throw _mapHttpError(response.statusCode, response.body);
+  }
+
+  // 6. PATCH: Marcar alerta como leída
+  Future<void> markAlertAsRead(int alertId) async {
+    final headers = await _authHeaders();
+    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/monitoring-alerts/$alertId/read');
+    
+    final response = await _send(
+      method: 'PATCH', 
+      uri: uri, 
+      headers: headers
+    );
+    
+    if (response.statusCode != HttpStatus.noContent && response.statusCode != HttpStatus.ok) {
+      throw _mapHttpError(response.statusCode, response.body);
+    }
+  }
+
   Future<EnvironmentThreshold> _requestOneThreshold({
     required String method,
     required Uri uri,
@@ -148,6 +183,9 @@ class MonitoringApiService {
             .timeout(const Duration(seconds: 15)),
         'PUT' => await _client
             .put(uri, headers: headers, body: body)
+            .timeout(const Duration(seconds: 15)),
+        'PATCH' => await _client
+            .patch(uri, headers: headers, body: body)
             .timeout(const Duration(seconds: 15)),
         _ => throw const MonitoringApiException('Método HTTP no soportado'),
       };

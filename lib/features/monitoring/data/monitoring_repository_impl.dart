@@ -1,7 +1,9 @@
 import 'package:cafelab_iot_mobile/features/monitoring/data/monitoring_api_service.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/environment_threshold.dart';
+import 'package:cafelab_iot_mobile/features/monitoring/domain/models/monitoring_alert.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/models/telemetry_record.dart';
 import 'package:cafelab_iot_mobile/features/monitoring/domain/monitoring_repository.dart';
+import 'package:flutter/material.dart';
 
 class MonitoringRepositoryImpl implements MonitoringRepository {
   MonitoringRepositoryImpl({MonitoringApiService? apiService})
@@ -27,6 +29,23 @@ class MonitoringRepositoryImpl implements MonitoringRepository {
   @override
   Future<List<TelemetryRecord>> getTelemetryByLotId(int coffeeLotId) async {
     return await _getApiServiceResult(() => _apiService.getTelemetryByLotId(coffeeLotId));
+  }
+
+  @override
+  Future<List<MonitoringAlert>> getAlertsByLotId(int lotId) async {
+    final List<dynamic> responseList = await _apiService.getAlertsByLotId(lotId);
+
+    debugPrint("DATOS RECIBIDOS DE API: $responseList");
+    
+    return responseList.map((item) {
+      final Map<String, dynamic> jsonMap = item as Map<String, dynamic>;
+      return MonitoringAlert.fromJson(jsonMap);
+    }).toList();
+  }
+
+  @override
+  Future<void> markAlertAsRead(int alertId) async {
+    await _apiService.markAlertAsRead(alertId);
   }
 
 
