@@ -1,6 +1,6 @@
 class ApiConfig {
   static const String _azureBackendUrl =
-      'https://robinson-democratic-headphones-animation.trycloudflare.com';
+      'https://obvious-carrier-wide-blackjack.trycloudflare.com';
 
   // Override at run time: --dart-define=API_BASE_URL=http://10.0.2.2:8080
   static const String baseUrl = String.fromEnvironment(
